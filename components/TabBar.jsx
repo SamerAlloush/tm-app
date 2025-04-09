@@ -6,9 +6,15 @@ const { width } = Dimensions.get('window');
 const primaryColor = '#0891b2';
 const greyColor = '#737373';
 
-const TabBar = ({ state, descriptors, navigation, isVisible }) => {
+const TabBar = ({ state = { routes: [], index: 0 }, descriptors = {}, navigation = {}, isVisible = true }) => {
   // If the tab bar is not visible, return null
   if (!isVisible) {
+    return null;
+  }
+
+  // Ensure we have valid props before rendering
+  if (!state?.routes || !descriptors || !navigation) {
+    console.warn('TabBar: Missing required navigation props');
     return null;
   }
 
@@ -16,7 +22,7 @@ const TabBar = ({ state, descriptors, navigation, isVisible }) => {
     <View style={styles.tabbar}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key] || {};
-        const label = options.tabBarLabel ?? options.title ?? route.name;
+        const label = options?.tabBarLabel ?? options?.title ?? route.name;
 
         // Skip rendering for specific routes
         if (['_sitemap', '+not-found', 'profile/DemandeAbsence'].includes(route.name)) {
@@ -46,6 +52,22 @@ const TabBar = ({ state, descriptors, navigation, isVisible }) => {
           });
         };
 
+        // Map route names to icon names
+        let iconName;
+        switch (route.name) {
+          case 'index':
+            iconName = 'home';
+            break;
+          case 'chantier':
+            iconName = 'construct';
+            break;
+          case 'profile/index':
+            iconName = 'person';
+            break;
+          default:
+            iconName = 'square';
+        }
+
         return (
           <TabBarButton
             key={route.name}
@@ -56,6 +78,7 @@ const TabBar = ({ state, descriptors, navigation, isVisible }) => {
             routeName={route.name}
             color={color}
             label={label}
+            iconName={iconName}
           />
         );
       })}

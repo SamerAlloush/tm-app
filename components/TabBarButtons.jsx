@@ -1,5 +1,3 @@
-
-
 // // export default TabBarButton;
 // import React, { useEffect } from 'react';
 // import { Pressable, Text, StyleSheet } from 'react-native';
@@ -62,7 +60,7 @@ import { Pressable, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-const TabBarButton = ({ isFocused, label, routeName, color, onPress, iconName }) => {
+const TabBarButton = ({ isFocused, label, routeName, color, onPress, iconName = 'square' }) => {
   const scale = useSharedValue(isFocused ? 1 : 0);
 
   useEffect(() => {
@@ -85,11 +83,30 @@ const TabBarButton = ({ isFocused, label, routeName, color, onPress, iconName })
     };
   });
 
+  // Ensure we have a valid icon name
+  const finalIconName = iconName || 'square';
+  
+  // Check if the icon has an outline version
+  // Some Ionicons don't have outline versions, so we'll use the regular version in those cases
+  const getIconName = () => {
+    // List of icons that don't have outline versions
+    const noOutlineIcons = ['construct', 'chatbubbles'];
+    
+    if (isFocused) {
+      return finalIconName;
+    } else {
+      // If the icon doesn't have an outline version, use the regular version
+      return noOutlineIcons.includes(finalIconName) 
+        ? finalIconName 
+        : `${finalIconName}-outline`;
+    }
+  };
+
   return (
     <Pressable onPress={onPress} style={styles.container}>
       <Animated.View style={animatedIconStyle}>
         <Ionicons
-          name={isFocused ? iconName : `${iconName}-outline`}
+          name={getIconName()}
           size={24}
           color={color}
         />

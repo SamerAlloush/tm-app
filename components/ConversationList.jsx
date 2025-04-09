@@ -29,6 +29,25 @@ const ConversationList = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [processedConversations, setProcessedConversations] = useState([]);
 
+  // Check if user is authenticated
+  if (!currentUser) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Icon name="person-off" size={50} color="#ccc" />
+        <Text style={styles.emptyTitle}>Not Authenticated</Text>
+        <Text style={styles.emptyText}>
+          Please log in to view your conversations
+        </Text>
+        <TouchableOpacity
+          style={styles.startChatButton}
+          onPress={() => navigation.navigate('login')}
+        >
+          <Text style={styles.startChatText}>Log In</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   useEffect(() => {
     const processConversations = async () => {
       const updated = await Promise.all(conversations.map(async convo => {

@@ -24,7 +24,11 @@ export function MessagingProvider({ children }) {
 
   // Get all conversations for the current user
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser) {
+      setConversations([]);
+      setLoading(false);
+      return;
+    }
 
     const q = query(
       collection(db, 'conversations'),
@@ -39,6 +43,9 @@ export function MessagingProvider({ children }) {
       }));
       setConversations(convos);
       setLoading(false);
+    }, (error) => {
+      console.error("Error fetching conversations:", error);
+      setLoading(false);
     });
 
     return unsubscribe;
@@ -46,6 +53,11 @@ export function MessagingProvider({ children }) {
 
   // Get all users (for creating new conversations)
   useEffect(() => {
+    if (!auth.currentUser) {
+      setUsers([]);
+      return;
+    }
+
     const q = query(collection(db, 'users'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -54,6 +66,8 @@ export function MessagingProvider({ children }) {
         ...doc.data()
       }));
       setUsers(userList.filter(user => user.id !== auth.currentUser?.uid));
+    }, (error) => {
+      console.error("Error fetching users:", error);
     });
 
     return unsubscribe;
@@ -61,7 +75,7 @@ export function MessagingProvider({ children }) {
 
   // Load messages for current conversation
   useEffect(() => {
-    if (!currentConversation) return;
+    if (!currentConversation || !auth.currentUser) return;
 
     const q = query(
       collection(db, 'conversations', currentConversation.id, 'messages'),
@@ -75,12 +89,19 @@ export function MessagingProvider({ children }) {
         timestamp: doc.data().timestamp?.toDate()
       }));
       setMessages(msgs);
+    }, (error) => {
+      console.error("Error fetching messages:", error);
     });
 
     return unsubscribe;
   }, [currentConversation]);
 
   const startConversation = async (participantIds) => {
+    if (!auth.currentUser) {
+      console.error("Cannot start conversation: User not authenticated");
+      return null;
+    }
+
     const participants = [...participantIds, auth.currentUser.uid];
     
     // Check if conversation already exists
@@ -101,14 +122,19 @@ export function MessagingProvider({ children }) {
       createdBy: auth.currentUser.uid
     };
 
-    const docRef = await addDoc(collection(db, 'conversations'), newConvo);
-    const convoWithId = { id: docRef.id, ...newConvo };
-    setCurrentConversation(convoWithId);
-    return convoWithId;
+    try {
+      const docRef = await addDoc(collection(db, 'conversations'), newConvo);
+      const convoWithId = { id: docRef.id, ...newConvo };
+      setCurrentConversation(convoWithId);
+      return convoWithId;
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      return null;
+    }
   };
 
   const sendMessage = async (text) => {
-    if (!currentConversation || !text.trim()) return;
+    if (!currentConversation || !text.trim() || !auth.currentUser) return;
 
     const message = {
       text,
@@ -117,17 +143,33 @@ export function MessagingProvider({ children }) {
       read: false
     };
 
-    await addDoc(
-      collection(db, 'conversations', currentConversation.id, 'messages'),
-      message
-    );
+    try {
+      await addDoc(
+        collection(db, 'conversations', currentConversation.id, 'messages'),
+        message
+      );
 
-    // Update conversation lastUpdated
-    await setDoc(
-      doc(db, 'conversations', currentConversation.id),
-      { lastUpdated: serverTimestamp() },
-      { merge: true }
-    );
+      // Update conversation lastUpdated
+      await setDoc(
+        doc(db, 'conversations', currentConversation.id),
+        { lastUpdated: serverTimestamp() },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
+  const refreshConversations = async () => {
+    if (!auth.currentUser) {
+      setConversations([]);
+      return;
+    }
+    
+    setLoading(true);
+    // The onSnapshot listener will update the conversations
+    // when the data changes, so we just need to set loading to false
+    setTimeout(() => setLoading(false), 1000);
   };
 
   const value = {
@@ -138,7 +180,8 @@ export function MessagingProvider({ children }) {
     loading,
     startConversation,
     sendMessage,
-    setCurrentConversation
+    setCurrentConversation,
+    refreshConversations
   };
 
   return (

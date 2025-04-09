@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef, useEffect } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,7 @@ import {
   Dimensions,
   SafeAreaView,
   ScrollView,
-  Animated,
-  PanResponder,
+  Alert,
   Platform
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
@@ -26,113 +25,103 @@ const Dashboard = () => {
     return <Text>Error: TasksContext is not available.</Text>;
   }
 
-  const { tasks = [], sites = {}, groups = {}, updateTaskAssignment } = context;
+  const { 
+    tasks = [], 
+    sites = {}, 
+    groups = {}, 
+    updateTaskAssignment,
+    unassignTask
+  } = context;
+  
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [dragItem, setDragItem] = useState(null);
-  const [dropZone, setDropZone] = useState(null);
-  const [dragPreview, setDragPreview] = useState(null);
-  const [dropZoneLayouts, setDropZoneLayouts] = useState({});
+  const [selectedGroup, setSelectedGroup] = useState(null);
   
-  const dropZoneRefs = useRef({});
-  const pan = useRef(new Animated.ValueXY()).current;
-
-  // Measure drop zones when layout changes
-  useEffect(() => {
-    const measureDropZones = () => {
-      const layouts = {};
-      Object.keys(dropZoneRefs.current).forEach(siteId => {
-        if (dropZoneRefs.current[siteId]) {
-          dropZoneRefs.current[siteId].measure((fx, fy, w, h, px, py) => {
-            layouts[siteId] = { x: px, y: py, width: w, height: h };
-          });
-        }
-      });
-      setDropZoneLayouts(layouts);
-    };
-    
-    const timeout = setTimeout(measureDropZones, 100);
-    return () => clearTimeout(timeout);
-  }, [sites]);
-
-  // PanResponder for drag and drop functionality
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (e, gestureState) => {
-        const groupName = e._targetInst.memoizedProps.children[0].props.children;
-        setDragItem(groupName);
-        setDragPreview({
-          name: groupName,
-          color: groups[groupName].color,
-          leader: groups[groupName].leader
-        });
-        pan.setValue({ x: 0, y: 0 });
-      },
-      onPanResponderMove: (e, gestureState) => {
-        Animated.event(
-          [null, { dx: pan.x, dy: pan.y }],
-          { useNativeDriver: false }
-        )(e, gestureState);
-        
-        // Check if we're over a drop zone
-        const pageX = e.nativeEvent.pageX;
-        const pageY = e.nativeEvent.pageY;
-        
-        let newDropZone = null;
-        Object.entries(dropZoneLayouts).forEach(([siteId, layout]) => {
-          if (pageX >= layout.x && 
-              pageX <= layout.x + layout.width &&
-              pageY >= layout.y && 
-              pageY <= layout.y + layout.height) {
-            newDropZone = siteId;
-          }
-        });
-        
-        if (newDropZone !== dropZone) {
-          setDropZone(newDropZone);
-        }
-      },
-      onPanResponderRelease: (e, gestureState) => {
-        if (dropZone && dragItem) {
-          // Update the task assignment in context
-          updateTaskAssignment(dragItem, dropZone);
-          
-          // Visual feedback
-          setTimeout(() => {
-            setDropZone(null);
-          }, 300);
-        }
-        resetDragState();
-      },
-      onPanResponderTerminate: resetDragState
-    })
-  ).current;
-
-  const resetDragState = () => {
-    Animated.spring(pan, {
-      toValue: { x: 0, y: 0 },
-      useNativeDriver: false
-    }).start(() => {
-      setDragItem(null);
-      setDragPreview(null);
-      setDropZone(null);
-    });
-  };
-
-  const registerDropZone = (siteId, ref) => {
-    if (ref) {
-      dropZoneRefs.current[siteId] = ref;
-    }
-  };
-
   // Get unassigned groups
   const unassignedGroups = Object.keys(groups).filter(group => {
     return !Object.values(sites).some(site => 
-      site.assignedGroups.includes(group)
+      site.assignedGroups && site.assignedGroups.includes(group)
     );
   });
+
+  // Handle group selection
+  const handleGroupSelect = (group) => {
+    setSelectedGroup(group);
+  };
+
+  // Handle site selection to assign group
+  const handleSiteSelect = (siteId) => {
+    if (!selectedGroup) {
+      Alert.alert(
+        "No Team Selected",
+        "Please select a team first from the Available Teams section.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
+    try {
+      // Use updateTaskAssignment directly instead of manual state manipulation
+      if (typeof updateTaskAssignment === 'function') {
+        updateTaskAssignment(selectedGroup, siteId);
+        
+        // Reset selected group
+        setSelectedGroup(null);
+      } else {
+        throw new Error('updateTaskAssignment is not available');
+      }
+    } catch (error) {
+      console.error('Error assigning team:', error);
+      Alert.alert(
+        "Assignment Error",
+        "There was an error assigning the team. Please try again.",
+        [{ text: "OK" }]
+      );
+    }
+  };
+
+  // Add function to handle team unassignment
+  const handleUnassignTeam = (group, siteId) => {
+    try {
+      console.log(`Attempting to unassign ${group} from ${siteId}`);
+      
+      // Validate parameters
+      if (!group) {
+        Alert.alert(
+          "Unassignment Error",
+          "No team specified for unassignment.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+      
+      // Check if the group exists
+      if (!groups[group]) {
+        Alert.alert(
+          "Unassignment Error",
+          `Team ${group} does not exist.`,
+          [{ text: "OK" }]
+        );
+        return;
+      }
+      
+      // Use updateTaskAssignment with null siteId to unassign the group from all sites
+      updateTaskAssignment(group, null);
+      
+      Alert.alert(
+        "Team Unassigned",
+        `${group} has been removed from ${siteId} and returned to Available Teams.`,
+        [{ text: "OK" }]
+      );
+    } catch (error) {
+      console.error('Error unassigning team:', error);
+      Alert.alert(
+        "Unassignment Error",
+        "There was an error removing the team. Please try again.",
+        [{ text: "OK" }]
+      );
+    }
+  };
 
   // Enhanced marked dates calculation
   const getMarkedDates = () => {
@@ -140,26 +129,28 @@ const Dashboard = () => {
     const today = new Date();
     
     Object.entries(sites).forEach(([siteId, siteData]) => {
-      siteData.assignedGroups.forEach(group => {
-        tasks.filter(task => 
-          task.siteId === siteId && 
-          task.assignedGroup === group
-        ).forEach(task => {
-          const dateStr = task.dueDate.split('T')[0];
-          if (!markedDates[dateStr]) {
-            markedDates[dateStr] = { dots: [] };
-          }
-          
-          const dotColor = task.completed ? 
-            `${groups[group].color}80` :
-            groups[group].color;
+      if (siteData.assignedGroups) {
+        siteData.assignedGroups.forEach(group => {
+          tasks.filter(task => 
+            task.siteId === siteId && 
+            task.assignedGroup === group
+          ).forEach(task => {
+            const dateStr = task.dueDate.split('T')[0];
+            if (!markedDates[dateStr]) {
+              markedDates[dateStr] = { dots: [] };
+            }
             
-          markedDates[dateStr].dots.push({
-            key: `${siteId}-${group}`,
-            color: dotColor
+            const dotColor = task.completed ? 
+              `${groups[group].color}80` :
+              groups[group].color;
+              
+            markedDates[dateStr].dots.push({
+              key: `${siteId}-${group}`,
+              color: dotColor
+            });
           });
         });
-      });
+      }
     });
     
     // Highlight today
@@ -175,10 +166,7 @@ const Dashboard = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContainer}
-        scrollEnabled={!dragItem}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Calendar with enhanced date marking */}
         <Calendar
           markedDates={getMarkedDates()}
@@ -207,14 +195,13 @@ const Dashboard = () => {
         <Text style={styles.sectionTitle}>Construction Sites</Text>
         
         {Object.entries(sites).map(([siteId, siteData]) => (
-          <View
+          <TouchableOpacity
             key={siteId}
-            ref={ref => registerDropZone(siteId, ref)}
             style={[
               styles.siteCard,
-              dropZone === siteId && styles.dropZoneActive,
-              dragItem && styles.draggingActive
+              selectedGroup && styles.dropZoneActive
             ]}
+            onPress={() => handleSiteSelect(siteId)}
           >
             <View style={styles.siteHeader}>
               <Text style={styles.siteName}>{siteId}</Text>
@@ -233,7 +220,7 @@ const Dashboard = () => {
               >
                 {(fill) => (
                   <View style={styles.progressContent}>
-                    <Text style={styles.progressText}>{fill}%</Text>
+                    <Text style={styles.progressText}>{parseInt(fill)}%</Text>
                     <Text style={styles.progressSubtext}>Done</Text>
                   </View>
                 )}
@@ -242,58 +229,61 @@ const Dashboard = () => {
 
             <Text style={styles.assignedTitle}>Assigned Teams:</Text>
             <View style={styles.assignedGroupsContainer}>
-              {siteData.assignedGroups.map(group => (
+              {siteData.assignedGroups && siteData.assignedGroups.map(group => (
                 <View
                   key={group}
                   style={[
                     styles.groupBadge, 
-                    { 
-                      backgroundColor: groups[group].color,
-                      opacity: dragItem === group ? 0.5 : 1
-                    }
+                    { backgroundColor: groups[group].color }
                   ]}
                 >
                   <Text style={styles.groupBadgeText}>{group}</Text>
+                  <TouchableOpacity
+                    style={styles.unassignButton}
+                    onPress={() => handleUnassignTeam(group, siteId)}
+                  >
+                    <Icon name="close" size={14} color="#fff" />
+                  </TouchableOpacity>
                 </View>
               ))}
-              {siteData.assignedGroups.length === 0 && (
+              {(!siteData.assignedGroups || siteData.assignedGroups.length === 0) && (
                 <View style={styles.dropHint}>
                   <Icon 
-                    name={dropZone === siteId ? "check-circle" : "arrow-drop-down"} 
+                    name={selectedGroup ? "check-circle" : "arrow-drop-down"} 
                     size={24} 
-                    color={dropZone === siteId ? '#00adf5' : '#ccc'} 
+                    color={selectedGroup ? '#00adf5' : '#ccc'} 
                   />
-                  <Text style={styles.noGroupsText}>Drop team here</Text>
+                  <Text style={styles.noGroupsText}>
+                    {selectedGroup ? 'Tap to assign team' : 'No teams assigned'}
+                  </Text>
                 </View>
               )}
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
 
-        {/* Available Teams - Draggable Items */}
+        {/* Available Teams */}
         <Text style={styles.sectionTitle}>Available Teams</Text>
         <View style={styles.unassignedContainer}>
           {unassignedGroups.length > 0 ? (
             unassignedGroups.map(group => (
-              <Animated.View
+              <TouchableOpacity
                 key={group}
                 style={[
                   styles.groupItem,
-                  { 
-                    backgroundColor: groups[group].color,
-                    transform: dragItem === group ? 
-                      [{ translateX: pan.x }, { translateY: pan.y }] : 
-                      []
-                  },
+                  { backgroundColor: groups[group].color },
+                  selectedGroup === group && styles.selectedGroupItem
                 ]}
-                {...(dragItem === group ? panResponder.panHandlers : {})}
+                onPress={() => handleGroupSelect(group)}
               >
                 <Text style={styles.groupText}>{group}</Text>
                 <Text style={styles.groupLeaderText}>Leader: {groups[group].leader}</Text>
-                <View style={styles.dragHandle} {...panResponder.panHandlers}>
-                  <Icon name="drag-handle" size={20} color="#fff" />
+                <View style={styles.selectIndicator}>
+                  {selectedGroup === group && (
+                    <Icon name="check-circle" size={24} color="#fff" />
+                  )}
                 </View>
-              </Animated.View>
+              </TouchableOpacity>
             ))
           ) : (
             <Text style={styles.allAssignedText}>All teams are assigned</Text>
@@ -335,13 +325,13 @@ const Dashboard = () => {
                       tintColor="#00adf5"
                       backgroundColor="#e0e0e0"
                     >
-                      {(fill) => <Text style={styles.smallProgressText}>{fill}%</Text>}
+                      {(fill) => <Text style={styles.smallProgressText}>{parseInt(fill)}%</Text>}
                     </AnimatedCircularProgress>
                     <Text style={styles.modalProgressLabel}>Completion</Text>
                   </View>
 
                   <Text style={styles.modalSectionTitle}>Assigned Teams</Text>
-                  {siteData.assignedGroups.map(group => (
+                  {siteData.assignedGroups && siteData.assignedGroups.map(group => (
                     <View key={group} style={styles.modalGroupItem}>
                       <View style={[styles.modalGroupColor, { backgroundColor: groups[group].color }]} />
                       <View style={styles.modalGroupInfo}>
@@ -353,6 +343,10 @@ const Dashboard = () => {
                       </View>
                     </View>
                   ))}
+
+                  {(!siteData.assignedGroups || siteData.assignedGroups.length === 0) && (
+                    <Text style={styles.modalNoTeams}>No teams assigned to this site</Text>
+                  )}
                 </View>
               ))}
             </ScrollView>
@@ -360,33 +354,20 @@ const Dashboard = () => {
         </Modal>
       </ScrollView>
       
-      {/* Drag Preview */}
-      {dragPreview && (
-        <Animated.View 
-          style={[
-            styles.dragPreview,
-            {
-              transform: [
-                { translateX: pan.x },
-                { translateY: pan.y }
-              ],
-              backgroundColor: dragPreview.color,
-              opacity: 0.9,
-              shadowOpacity: 0.3
-            }
-          ]}
-          pointerEvents="none"
-        >
-          <Text style={styles.dragPreviewText}>{dragPreview.name}</Text>
-          <Text style={styles.dragPreviewSubtext}>Leader: {dragPreview.leader}</Text>
-          <View style={styles.dragPreviewArrow}>
-            <Icon 
-              name={dropZone ? "check-circle" : "arrow-forward"} 
-              size={24} 
-              color="#fff" 
-            />
-          </View>
-        </Animated.View>
+      {/* Selection Instructions */}
+      {selectedGroup && (
+        <View style={styles.selectionInstructions}>
+          <Text style={styles.instructionsText}>
+            <Text style={styles.instructionsHighlight}>{selectedGroup}</Text> selected. 
+            Tap on a site to assign this team.
+          </Text>
+          <TouchableOpacity 
+            style={styles.cancelButton}
+            onPress={() => setSelectedGroup(null)}
+          >
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -431,9 +412,6 @@ const styles = StyleSheet.create({
     borderColor: '#00adf5',
     backgroundColor: '#f0f8ff',
     borderWidth: 2,
-  },
-  draggingActive: {
-    opacity: 0.8,
   },
   siteHeader: {
     marginBottom: 10,
@@ -487,11 +465,23 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginRight: 8,
     marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   groupBadgeText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
+    marginRight: 4,
+  },
+  unassignButton: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
   },
   noGroupsText: {
     fontStyle: 'italic',
@@ -532,6 +522,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
+  selectedGroupItem: {
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
   groupText: {
     color: '#fff',
     fontWeight: 'bold',
@@ -542,37 +539,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.8,
   },
-  dragHandle: {
+  selectIndicator: {
     position: 'absolute',
     right: 8,
     top: 8,
   },
-  dragPreview: {
+  selectionInstructions: {
     position: 'absolute',
-    width: width * 0.4,
-    padding: 12,
-    borderRadius: 8,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowRadius: 10,
-    zIndex: 100,
-    transform: [{ scale: 1.05 }],
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    padding: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  dragPreviewText: {
+  instructionsText: {
+    color: '#fff',
+    fontSize: 14,
+    flex: 1,
+  },
+  instructionsHighlight: {
+    fontWeight: 'bold',
+    color: '#00adf5',
+  },
+  cancelButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    backgroundColor: '#e74c3c',
+    borderRadius: 5,
+    marginLeft: 10,
+  },
+  cancelText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
-  },
-  dragPreviewSubtext: {
-    color: '#fff',
-    fontSize: 12,
-    opacity: 0.8,
-  },
-  dragPreviewArrow: {
-    position: 'absolute',
-    right: 10,
-    top: 10,
   },
   modalContainer: {
     flex: 1,
@@ -583,7 +584,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 15,
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'ios' ? 50 : 15,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
@@ -664,6 +665,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     fontStyle: 'italic',
+  },
+  modalNoTeams: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: '#999',
+    padding: 10,
+    textAlign: 'center',
   },
 });
 

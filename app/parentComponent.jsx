@@ -1,12 +1,12 @@
 import React from 'react';
-import { TasksContextProvider } from '../context/TasksContext';
+import { TasksProvider } from '../context/TasksContext';
 import Dashboard from './index';
 
 const ParentComponent = () => {
   return (
-    <TasksContextProvider>
+    <TasksProvider>
       <Dashboard />
-    </TasksContextProvider>
+    </TasksProvider>
   );
 };
 
