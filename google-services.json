@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "562616363480",
+    "project_id": "tm-app-215e8",
+    "storage_bucket": "tm-app-215e8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:562616363480:android:b69ed70748de0bd29e6aad",
+        "android_client_info": {
+          "package_name": "com.tmapp.newproject"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyArAS-ufNNHc98Qygul0r26wHyw_0gsWfM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
