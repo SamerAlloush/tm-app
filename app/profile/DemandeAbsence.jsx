@@ -1,792 +1,27 @@
-
-// // // // export default DemandeAbsence;
-// // // import React, { useState } from 'react';
-// // // import { View, Text, TextInput, Alert, StyleSheet, ScrollView, Modal, SafeAreaView } from 'react-native';
-// // // import { RadioButton, Checkbox, Button } from 'react-native-paper';
-// // // import { Calendar } from 'react-native-calendars';
-// // // import { useLocalSearchParams, useRouter } from 'expo-router';
-
-// // // const DemandeAbsence = () => {
-// // //   const router = useRouter();
-// // //   const { pendingDemands: pendingDemandsParam } = useLocalSearchParams();
-
-// // //   // Ensure pendingDemands is an array
-// // //   const [pendingDemands, setPendingDemands] = useState(
-// // //     pendingDemandsParam ? JSON.parse(pendingDemandsParam) : []
-// // //   );
-
-// // //   const [firstName, setFirstName] = useState('');
-// // //   const [lastName, setLastName] = useState('');
-// // //   const [reason, setReason] = useState('sick');
-// // //   const [morningChecked, setMorningChecked] = useState(false);
-// // //   const [afternoonChecked, setAfternoonChecked] = useState(false);
-// // //   const [selectedDates, setSelectedDates] = useState({});
-// // //   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
-
-// // //   // Define holidays (you can expand this list as needed)
-// // //   const holidays = {
-// // //     '2023-12-25': { disabled: true, disableTouchEvent: true }, // Christmas
-// // //     '2024-01-01': { disabled: true, disableTouchEvent: true }, // New Year's Day
-// // //   };
-
-// // //   const onDayPress = (day) => {
-// // //     const { dateString } = day;
-// // //     const today = new Date();
-// // //     const selectedDate = new Date(dateString);
-
-// // //     // Check if the selected date is in the past
-// // //     if (selectedDate < today) {
-// // //       Alert.alert("Invalid Date", "You cannot select a date that has already passed.");
-// // //       return;
-// // //     }
-
-// // //     // Check if the selected date is a weekend
-// // //     const dayOfWeek = selectedDate.getDay();
-// // //     if (dayOfWeek === 0 || dayOfWeek === 6) {
-// // //       Alert.alert("Invalid Date", "Weekends cannot be selected. Please choose another date.");
-// // //       return;
-// // //     }
-
-// // //     // Check if the selected date is a holiday
-// // //     if (holidays[dateString]) {
-// // //       Alert.alert("Invalid Date", "This date is a holiday. Please choose another date.");
-// // //       return;
-// // //     }
-
-// // //     // Toggle the selected date
-// // //     const newDates = { ...selectedDates };
-// // //     if (newDates[dateString]) {
-// // //       delete newDates[dateString];
-// // //     } else {
-// // //       newDates[dateString] = { selected: true, selectedColor: 'blue' };
-// // //     }
-// // //     setSelectedDates(newDates);
-// // //   };
-
-// // //   const handleSubmit = () => {
-// // //     const dates = Object.keys(selectedDates);
-// // //     if (dates.length > 0) {
-// // //       const newDemand = {
-// // //         id: pendingDemands.length + 1,
-// // //         firstName,
-// // //         lastName,
-// // //         reason,
-// // //         dates: dates.join(', '),
-// // //         morningChecked,
-// // //         afternoonChecked,
-// // //         status: 'Pending',
-// // //       };
-
-// // //       // Update the pending demands state
-// // //       const updatedPendingDemands = [...pendingDemands, newDemand];
-// // //       setPendingDemands(updatedPendingDemands);
-
-// // //       // Pass the updated state back to the profile screen
-// // //       router.push({
-// // //         pathname: '/profile',
-// // //         params: { updatedPendingDemands: JSON.stringify(updatedPendingDemands) },
-// // //       });
-
-// // //       Alert.alert("Absence Request Submitted", `You have requested absence for: ${dates.join(', ')}`);
-// // //       clearForm();
-// // //     } else {
-// // //       Alert.alert("No Dates Selected", "Please select one or more dates for your absence.");
-// // //     }
-// // //   };
-
-// // //   const clearForm = () => {
-// // //     setFirstName('');
-// // //     setLastName('');
-// // //     setReason('sick');
-// // //     setMorningChecked(false);
-// // //     setAfternoonChecked(false);
-// // //     setSelectedDates({});
-// // //   };
-
-// // //   const goToProfile = () => {
-// // //     router.push('/profile');
-// // //   };
-
-// // //   return (
-// // //     <SafeAreaView style={{ flex: 1 }}>
-// // //       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-// // //         <Text style={styles.title}>Demande d'Absence</Text>
-// // //         <TextInput style={styles.input} onChangeText={setFirstName} value={firstName} placeholder="First Name" />
-// // //         <TextInput style={styles.input} onChangeText={setLastName} value={lastName} placeholder="Last Name" />
-
-// // //         <Text style={styles.subtitle}>Reason of Absence</Text>
-// // //         <RadioButton.Group onValueChange={newReason => setReason(newReason)} value={reason}>
-// // //           <View style={styles.radioContainer}>
-// // //             <RadioButton value="sick" />
-// // //             <Text style={styles.label}>Sickness</Text>
-// // //           </View>
-// // //           <View style={styles.radioContainer}>
-// // //             <RadioButton value="vacation" />
-// // //             <Text style={styles.label}>Vacation</Text>
-// // //           </View>
-// // //           <View style={styles.radioContainer}>
-// // //             <RadioButton value="personal" />
-// // //             <Text style={styles.label}>Personal</Text>
-// // //           </View>
-// // //         </RadioButton.Group>
-
-// // //         <Text style={styles.subtitle}>Select Absence Days</Text>
-// // //         {Object.keys(selectedDates).length > 0 && (
-// // //           <View style={styles.selectedDatesContainer}>
-// // //             <Text style={styles.selectedDatesText}>Selected Days: {Object.keys(selectedDates).join(', ')}</Text>
-// // //             <Button mode="outlined" onPress={() => setSelectedDates({})} style={styles.clearButton}>Clear Selected Days</Button>
-// // //           </View>
-// // //         )}
-
-// // //         <Button mode="contained" onPress={() => setIsCalendarVisible(true)} style={styles.button}>
-// // //           {Object.keys(selectedDates).length > 0 ? "Modify Absence Day" : "Choose Absence Day"}
-// // //         </Button>
-
-// // //         <Modal visible={isCalendarVisible} animationType="slide" transparent={true} onRequestClose={() => setIsCalendarVisible(false)}>
-// // //           <View style={styles.modalContainer}>
-// // //             <View style={styles.calendarContainer}>
-// // //               <Calendar
-// // //                 markingType={'custom'}
-// // //                 onDayPress={onDayPress}
-// // //                 markedDates={{ ...selectedDates, ...holidays }}
-// // //                 minDate={new Date().toISOString().split('T')[0]} // Disable past dates
-// // //               />
-// // //               <Button mode="outlined" onPress={() => setIsCalendarVisible(false)} style={styles.closeButton}>Close</Button>
-// // //             </View>
-// // //           </View>
-// // //         </Modal>
-
-// // //         <Text style={styles.subtitle}>Part of the Day Skipped</Text>
-// // //         <View style={styles.checkboxContainer}>
-// // //           <Checkbox status={morningChecked ? 'checked' : 'unchecked'} onPress={() => setMorningChecked(!morningChecked)} />
-// // //           <Text style={styles.label}>Morning</Text>
-// // //         </View>
-// // //         <View style={styles.checkboxContainer}>
-// // //           <Checkbox status={afternoonChecked ? 'checked' : 'unchecked'} onPress={() => setAfternoonChecked(!afternoonChecked)} />
-// // //           <Text style={styles.label}>Afternoon</Text>
-// // //         </View>
-
-// // //         <Button mode="contained" onPress={handleSubmit} style={styles.button}>Submit Absence Request</Button>
-// // //         <Button mode="outlined" onPress={goToProfile} style={styles.button}>Back to Profile</Button>
-// // //       </ScrollView>
-// // //     </SafeAreaView>
-// // //   );
-// // // };
-
-// // // const styles = StyleSheet.create({
-// // //   container: {
-// // //     flex: 1,
-// // //     paddingTop: 50,
-// // //     paddingHorizontal: 20,
-// // //   },
-// // //   content: {
-// // //     paddingBottom: 80,
-// // //   },
-// // //   title: {
-// // //     fontSize: 24,
-// // //     fontWeight: 'bold',
-// // //     marginBottom: 20,
-// // //     textAlign: 'center',
-// // //     color: '#333',
-// // //   },
-// // //   subtitle: {
-// // //     fontSize: 18,
-// // //     fontWeight: 'bold',
-// // //     marginBottom: 10,
-// // //     color: '#555',
-// // //   },
-// // //   radioContainer: {
-// // //     flexDirection: 'row',
-// // //     alignItems: 'center',
-// // //     marginBottom: 10,
-// // //   },
-// // //   checkboxContainer: {
-// // //     flexDirection: 'row',
-// // //     alignItems: 'center',
-// // //     marginBottom: 10,
-// // //   },
-// // //   label: {
-// // //     marginLeft: 8,
-// // //     fontSize: 16,
-// // //     color: '#333',
-// // //   },
-// // //   input: {
-// // //     width: '100%',
-// // //     padding: 12,
-// // //     borderWidth: 1,
-// // //     borderColor: '#ddd',
-// // //     borderRadius: 5,
-// // //     marginBottom: 15,
-// // //     fontSize: 16,
-// // //   },
-// // //   button: {
-// // //     marginVertical: 10,
-// // //     paddingVertical: 10,
-// // //   },
-// // //   clearButton: {
-// // //     marginVertical: 10,
-// // //   },
-// // //   modalContainer: {
-// // //     flex: 1,
-// // //     justifyContent: 'center',
-// // //     alignItems: 'center',
-// // //     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-// // //   },
-// // //   calendarContainer: {
-// // //     backgroundColor: 'white',
-// // //     padding: 20,
-// // //     borderRadius: 10,
-// // //     width: '90%',
-// // //   },
-// // //   closeButton: {
-// // //     marginTop: 10,
-// // //   },
-// // //   selectedDatesContainer: {
-// // //     marginBottom: 10,
-// // //     alignItems: 'center',
-// // //   },
-// // //   selectedDatesText: {
-// // //     fontSize: 16,
-// // //     color: '#333',
-// // //     marginBottom: 10,
-// // //   },
-// // // });
-
-// // // export default DemandeAbsence;
-// // import React, { useState } from 'react';
-// // import { View, Text, TextInput, Alert, StyleSheet, ScrollView, Modal, SafeAreaView } from 'react-native';
-// // import { RadioButton, Checkbox, Button } from 'react-native-paper';
-// // import { Calendar } from 'react-native-calendars';
-// // import { useLocalSearchParams, useRouter } from 'expo-router';
-
-// // const DemandeAbsence = () => {
-// //   const router = useRouter();
-// //   const { pendingDemands: pendingDemandsParam } = useLocalSearchParams();
-
-// //   // Ensure pendingDemands is an array
-// //   const [pendingDemands, setPendingDemands] = useState(
-// //     pendingDemandsParam ? JSON.parse(pendingDemandsParam) : []
-// //   );
-
-// //   const [firstName, setFirstName] = useState('');
-// //   const [lastName, setLastName] = useState('');
-// //   const [reason, setReason] = useState('sick');
-// //   const [morningChecked, setMorningChecked] = useState(false);
-// //   const [afternoonChecked, setAfternoonChecked] = useState(false);
-// //   const [selectedDates, setSelectedDates] = useState({});
-// //   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
-
-// //   // Define holidays (you can expand this list as needed)
-// //   const holidays = {
-// //     '2023-12-25': { disabled: true, disableTouchEvent: true }, // Christmas
-// //     '2024-01-01': { disabled: true, disableTouchEvent: true }, // New Year's Day
-// //   };
-
-// //   const onDayPress = (day) => {
-// //     const { dateString } = day;
-// //     const today = new Date();
-// //     const selectedDate = new Date(dateString);
-
-// //     // Check if the selected date is in the past
-// //     if (selectedDate < today) {
-// //       Alert.alert("Invalid Date", "You cannot select a date that has already passed.");
-// //       return;
-// //     }
-
-// //     // Check if the selected date is a weekend
-// //     const dayOfWeek = selectedDate.getDay();
-// //     if (dayOfWeek === 0 || dayOfWeek === 6) {
-// //       Alert.alert("Invalid Date", "Weekends cannot be selected. Please choose another date.");
-// //       return;
-// //     }
-
-// //     // Check if the selected date is a holiday
-// //     if (holidays[dateString]) {
-// //       Alert.alert("Invalid Date", "This date is a holiday. Please choose another date.");
-// //       return;
-// //     }
-
-// //     // Toggle the selected date
-// //     const newDates = { ...selectedDates };
-// //     if (newDates[dateString]) {
-// //       delete newDates[dateString];
-// //     } else {
-// //       newDates[dateString] = { selected: true, selectedColor: 'blue' };
-// //     }
-// //     setSelectedDates(newDates);
-// //   };
-
-// //   const handleSubmit = () => {
-// //     const dates = Object.keys(selectedDates);
-// //     if (dates.length > 0) {
-// //       const newDemand = {
-// //         id: pendingDemands.length + 1,
-// //         firstName,
-// //         lastName,
-// //         reason,
-// //         dates: dates.join(', '),
-// //         morningChecked,
-// //         afternoonChecked,
-// //         status: 'Pending',
-// //       };
-
-// //       // Update the pending demands state
-// //       const updatedPendingDemands = [...pendingDemands, newDemand];
-// //       setPendingDemands(updatedPendingDemands);
-
-// //       // Pass the updated state back to the profile screen
-// //       router.push({
-// //         pathname: '/profile',
-// //         params: { updatedPendingDemands: JSON.stringify(updatedPendingDemands) },
-// //       });
-
-// //       Alert.alert("Absence Request Submitted", `You have requested absence for: ${dates.join(', ')}`);
-// //       clearForm();
-// //     } else {
-// //       Alert.alert("No Dates Selected", "Please select one or more dates for your absence.");
-// //     }
-// //   };
-
-// //   const clearForm = () => {
-// //     setFirstName('');
-// //     setLastName('');
-// //     setReason('sick');
-// //     setMorningChecked(false);
-// //     setAfternoonChecked(false);
-// //     setSelectedDates({});
-// //   };
-
-// //   const goToProfile = () => {
-// //     router.push('/profile');
-// //   };
-
-// //   return (
-// //     <SafeAreaView style={{ flex: 1 }}>
-// //       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-// //         <Text style={styles.title}>Demande d'Absence</Text>
-// //         <TextInput style={styles.input} onChangeText={setFirstName} value={firstName} placeholder="First Name" />
-// //         <TextInput style={styles.input} onChangeText={setLastName} value={lastName} placeholder="Last Name" />
-
-// //         <Text style={styles.subtitle}>Reason of Absence</Text>
-// //         <RadioButton.Group onValueChange={newReason => setReason(newReason)} value={reason}>
-// //           <View style={styles.radioContainer}>
-// //             <RadioButton value="sick" />
-// //             <Text style={styles.label}>Sickness</Text>
-// //           </View>
-// //           <View style={styles.radioContainer}>
-// //             <RadioButton value="vacation" />
-// //             <Text style={styles.label}>Vacation</Text>
-// //           </View>
-// //           <View style={styles.radioContainer}>
-// //             <RadioButton value="personal" />
-// //             <Text style={styles.label}>Personal</Text>
-// //           </View>
-// //         </RadioButton.Group>
-
-// //         <Text style={styles.subtitle}>Select Absence Days</Text>
-// //         {Object.keys(selectedDates).length > 0 && (
-// //           <View style={styles.selectedDatesContainer}>
-// //             <Text style={styles.selectedDatesText}>Selected Days: {Object.keys(selectedDates).join(', ')}</Text>
-// //             <Button mode="outlined" onPress={() => setSelectedDates({})} style={styles.clearButton}>Clear Selected Days</Button>
-// //           </View>
-// //         )}
-
-// //         <Button mode="contained" onPress={() => setIsCalendarVisible(true)} style={styles.button}>
-// //           {Object.keys(selectedDates).length > 0 ? "Modify Absence Day" : "Choose Absence Day"}
-// //         </Button>
-
-// //         <Modal visible={isCalendarVisible} animationType="slide" transparent={true} onRequestClose={() => setIsCalendarVisible(false)}>
-// //           <View style={styles.modalContainer}>
-// //             <View style={styles.calendarContainer}>
-// //               <Calendar
-// //                 markingType={'custom'}
-// //                 onDayPress={onDayPress}
-// //                 markedDates={{ ...selectedDates, ...holidays }}
-// //                 minDate={new Date().toISOString().split('T')[0]} // Disable past dates
-// //               />
-// //               <Button mode="outlined" onPress={() => setIsCalendarVisible(false)} style={styles.closeButton}>Close</Button>
-// //             </View>
-// //           </View>
-// //         </Modal>
-
-// //         <Text style={styles.subtitle}>Part of the Day Skipped</Text>
-// //         <View style={styles.checkboxContainer}>
-// //           <Checkbox status={morningChecked ? 'checked' : 'unchecked'} onPress={() => setMorningChecked(!morningChecked)} />
-// //           <Text style={styles.label}>Morning</Text>
-// //         </View>
-// //         <View style={styles.checkboxContainer}>
-// //           <Checkbox status={afternoonChecked ? 'checked' : 'unchecked'} onPress={() => setAfternoonChecked(!afternoonChecked)} />
-// //           <Text style={styles.label}>Afternoon</Text>
-// //         </View>
-
-// //         <Button mode="contained" onPress={handleSubmit} style={styles.button}>Submit Absence Request</Button>
-// //         <Button mode="outlined" onPress={goToProfile} style={styles.button}>Back to Profile</Button>
-// //       </ScrollView>
-// //     </SafeAreaView>
-// //   );
-// // };
-
-// // const styles = StyleSheet.create({
-// //   container: {
-// //     flex: 1,
-// //     paddingTop: 50,
-// //     paddingHorizontal: 20,
-// //   },
-// //   content: {
-// //     paddingBottom: 80,
-// //   },
-// //   title: {
-// //     fontSize: 24,
-// //     fontWeight: 'bold',
-// //     marginBottom: 20,
-// //     textAlign: 'center',
-// //     color: '#333',
-// //   },
-// //   subtitle: {
-// //     fontSize: 18,
-// //     fontWeight: 'bold',
-// //     marginBottom: 10,
-// //     color: '#555',
-// //   },
-// //   radioContainer: {
-// //     flexDirection: 'row',
-// //     alignItems: 'center',
-// //     marginBottom: 10,
-// //   },
-// //   checkboxContainer: {
-// //     flexDirection: 'row',
-// //     alignItems: 'center',
-// //     marginBottom: 10,
-// //   },
-// //   label: {
-// //     marginLeft: 8,
-// //     fontSize: 16,
-// //     color: '#333',
-// //   },
-// //   input: {
-// //     width: '100%',
-// //     padding: 12,
-// //     borderWidth: 1,
-// //     borderColor: '#ddd',
-// //     borderRadius: 5,
-// //     marginBottom: 15,
-// //     fontSize: 16,
-// //   },
-// //   button: {
-// //     marginVertical: 10,
-// //     paddingVertical: 10,
-// //   },
-// //   clearButton: {
-// //     marginVertical: 10,
-// //   },
-// //   modalContainer: {
-// //     flex: 1,
-// //     justifyContent: 'center',
-// //     alignItems: 'center',
-// //     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-// //   },
-// //   calendarContainer: {
-// //     backgroundColor: 'white',
-// //     padding: 20,
-// //     borderRadius: 10,
-// //     width: '90%',
-// //   },
-// //   closeButton: {
-// //     marginTop: 10,
-// //   },
-// //   selectedDatesContainer: {
-// //     marginBottom: 10,
-// //     alignItems: 'center',
-// //   },
-// //   selectedDatesText: {
-// //     fontSize: 16,
-// //     color: '#333',
-// //     marginBottom: 10,
-// //   },
-// // });
-
-// // export default DemandeAbsence;
-// import React, { useState } from 'react';
-// import { View, Text, TextInput, Alert, StyleSheet, ScrollView, Modal, SafeAreaView } from 'react-native';
-// import { RadioButton, Checkbox, Button } from 'react-native-paper';
-// import { Calendar } from 'react-native-calendars';
-// import { useLocalSearchParams, useRouter } from 'expo-router';
-
-// const DemandeAbsence = () => {
-//   const router = useRouter();
-//   const { pendingDemands: pendingDemandsParam } = useLocalSearchParams();
-
-//   // Ensure pendingDemands is an array
-//   const [pendingDemands, setPendingDemands] = useState(
-//     pendingDemandsParam ? JSON.parse(pendingDemandsParam) : []
-//   );
-
-//   const [firstName, setFirstName] = useState('');
-//   const [lastName, setLastName] = useState('');
-//   const [reason, setReason] = useState('sick');
-//   const [morningChecked, setMorningChecked] = useState(false);
-//   const [afternoonChecked, setAfternoonChecked] = useState(false);
-//   const [selectedDates, setSelectedDates] = useState({});
-//   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
-
-//   // Define holidays (you can expand this list as needed)
-//   const holidays = {
-//     '2023-12-25': { disabled: true, disableTouchEvent: true }, // Christmas
-//     '2024-01-01': { disabled: true, disableTouchEvent: true }, // New Year's Day
-//   };
-
-//   const onDayPress = (day) => {
-//     const { dateString } = day;
-//     const today = new Date();
-//     const selectedDate = new Date(dateString);
-
-//     // Check if the selected date is in the past
-//     if (selectedDate < today) {
-//       Alert.alert("Invalid Date", "You cannot select a date that has already passed.");
-//       return;
-//     }
-
-//     // Check if the selected date is a weekend
-//     const dayOfWeek = selectedDate.getDay();
-//     if (dayOfWeek === 0 || dayOfWeek === 6) {
-//       Alert.alert("Invalid Date", "Weekends cannot be selected. Please choose another date.");
-//       return;
-//     }
-
-//     // Check if the selected date is a holiday
-//     if (holidays[dateString]) {
-//       Alert.alert("Invalid Date", "This date is a holiday. Please choose another date.");
-//       return;
-//     }
-
-//     // Toggle the selected date
-//     const newDates = { ...selectedDates };
-//     if (newDates[dateString]) {
-//       delete newDates[dateString];
-//     } else {
-//       newDates[dateString] = { selected: true, selectedColor: 'blue' };
-//     }
-//     setSelectedDates(newDates);
-//   };
-
-//   const handleSubmit = () => {
-//     const dates = Object.keys(selectedDates);
-//     if (dates.length > 0) {
-//       const newDemand = {
-//         id: pendingDemands.length + 1,
-//         firstName,
-//         lastName,
-//         reason,
-//         dates: dates.join(', '),
-//         morningChecked,
-//         afternoonChecked,
-//         status: 'Pending',
-//       };
-
-//       // Update the pending demands state
-//       const updatedPendingDemands = [...pendingDemands, newDemand];
-//       setPendingDemands(updatedPendingDemands);
-
-//       // Pass the updated state back to the profile screen
-//       router.push({
-//         pathname: '/profile',
-//         params: { updatedPendingDemands: JSON.stringify(updatedPendingDemands) },
-//       });
-
-//       Alert.alert("Absence Request Submitted", `You have requested absence for: ${dates.join(', ')}`);
-//       clearForm();
-//     } else {
-//       Alert.alert("No Dates Selected", "Please select one or more dates for your absence.");
-//     }
-//   };
-
-//   const clearForm = () => {
-//     setFirstName('');
-//     setLastName('');
-//     setReason('sick');
-//     setMorningChecked(false);
-//     setAfternoonChecked(false);
-//     setSelectedDates({});
-//   };
-
-//   const goToProfile = () => {
-//     router.push('/profile');
-//   };
-
-//   return (
-//     <SafeAreaView style={{ flex: 1 }}>
-//       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-//         <Text style={styles.title}>Demande d'Absence</Text>
-//         <TextInput style={styles.input} onChangeText={setFirstName} value={firstName} placeholder="First Name" />
-//         <TextInput style={styles.input} onChangeText={setLastName} value={lastName} placeholder="Last Name" />
-
-//         <Text style={styles.subtitle}>Reason of Absence</Text>
-//         <RadioButton.Group onValueChange={newReason => setReason(newReason)} value={reason}>
-//           <View style={styles.radioContainer}>
-//             <RadioButton value="sick" />
-//             <Text style={styles.label}>Sickness</Text>
-//           </View>
-//           <View style={styles.radioContainer}>
-//             <RadioButton value="vacation" />
-//             <Text style={styles.label}>Vacation</Text>
-//           </View>
-//           <View style={styles.radioContainer}>
-//             <RadioButton value="personal" />
-//             <Text style={styles.label}>Personal</Text>
-//           </View>
-//         </RadioButton.Group>
-
-//         <Text style={styles.subtitle}>Select Absence Days</Text>
-//         {Object.keys(selectedDates).length > 0 && (
-//           <View style={styles.selectedDatesContainer}>
-//             <Text style={styles.selectedDatesText}>Selected Days: {Object.keys(selectedDates).join(', ')}</Text>
-//             <Button mode="outlined" onPress={() => setSelectedDates({})} style={styles.clearButton}>Clear Selected Days</Button>
-//           </View>
-//         )}
-
-//         <Button mode="contained" onPress={() => setIsCalendarVisible(true)} style={styles.button}>
-//           {Object.keys(selectedDates).length > 0 ? "Modify Absence Day" : "Choose Absence Day"}
-//         </Button>
-
-//         <Modal visible={isCalendarVisible} animationType="slide" transparent={true} onRequestClose={() => setIsCalendarVisible(false)}>
-//           <View style={styles.modalContainer}>
-//             <View style={styles.calendarContainer}>
-//               <Calendar
-//                 markingType={'custom'}
-//                 onDayPress={onDayPress}
-//                 markedDates={{ ...selectedDates, ...holidays }}
-//                 minDate={new Date().toISOString().split('T')[0]} // Disable past dates
-//               />
-//               <Button mode="outlined" onPress={() => setIsCalendarVisible(false)} style={styles.closeButton}>Close</Button>
-//             </View>
-//           </View>
-//         </Modal>
-
-//         <Text style={styles.subtitle}>Part of the Day Skipped</Text>
-//         <View style={styles.checkboxContainer}>
-//           <Checkbox status={morningChecked ? 'checked' : 'unchecked'} onPress={() => setMorningChecked(!morningChecked)} />
-//           <Text style={styles.label}>Morning</Text>
-//         </View>
-//         <View style={styles.checkboxContainer}>
-//           <Checkbox status={afternoonChecked ? 'checked' : 'unchecked'} onPress={() => setAfternoonChecked(!afternoonChecked)} />
-//           <Text style={styles.label}>Afternoon</Text>
-//         </View>
-
-//         <Button mode="contained" onPress={handleSubmit} style={styles.button}>Submit Absence Request</Button>
-//         <Button mode="outlined" onPress={goToProfile} style={styles.button}>Back to Profile</Button>
-//       </ScrollView>
-//     </SafeAreaView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     paddingTop: 20, // Reduced paddingTop to lift content up
-//     paddingHorizontal: 20,
-//   },
-//   content: {
-//     paddingBottom: 60, // Reduced paddingBottom to avoid overlap with nav bar
-//   },
-//   title: {
-//     fontSize: 24,
-//     fontWeight: 'bold',
-//     marginBottom: 10, // Reduced marginBottom to lift content up
-//     textAlign: 'center',
-//     color: '#333',
-//   },
-//   subtitle: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//     marginTop: 10, // Reduced marginTop to lift content up
-//     marginBottom: 10,
-//     color: '#555',
-//   },
-//   radioContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginBottom: 10,
-//   },
-//   checkboxContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginBottom: 10,
-//   },
-//   label: {
-//     marginLeft: 8,
-//     fontSize: 16,
-//     color: '#333',
-//   },
-//   input: {
-//     width: '100%',
-//     padding: 12,
-//     borderWidth: 1,
-//     borderColor: '#ddd',
-//     borderRadius: 5,
-//     marginBottom: 15,
-//     fontSize: 16,
-//   },
-//   button: {
-//     marginVertical: 10,
-//     paddingVertical: 10,
-//   },
-//   clearButton: {
-//     marginVertical: 10,
-//   },
-//   modalContainer: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-//   },
-//   calendarContainer: {
-//     backgroundColor: 'white',
-//     padding: 20,
-//     borderRadius: 10,
-//     width: '90%',
-//   },
-//   closeButton: {
-//     marginTop: 10,
-//   },
-//   selectedDatesContainer: {
-//     marginBottom: 10,
-//     alignItems: 'center',
-//   },
-//   selectedDatesText: {
-//     fontSize: 16,
-//     color: '#333',
-//     marginBottom: 10,
-//   },
-// });
-
-// export default DemandeAbsence;
+// app/profile/DemandeAbsence.jsx
 import React, { useState } from 'react';
-import { View, Text, TextInput, Alert, StyleSheet, ScrollView, Modal, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Modal, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
 import { RadioButton, Checkbox, Button } from 'react-native-paper';
 import { Calendar } from 'react-native-calendars';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../../context/AuthContext';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../firebase/firebaseConfig';
+import { Ionicons } from '@expo/vector-icons';
 
 const DemandeAbsence = () => {
   const router = useRouter();
-  const { pendingDemands: pendingDemandsParam } = useLocalSearchParams();
-
-  // Ensure pendingDemands is an array
-  const [pendingDemands, setPendingDemands] = useState(
-    pendingDemandsParam ? JSON.parse(pendingDemandsParam) : []
-  );
-
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const { user } = useAuth();
   const [reason, setReason] = useState('sick');
   const [morningChecked, setMorningChecked] = useState(false);
   const [afternoonChecked, setAfternoonChecked] = useState(false);
   const [selectedDates, setSelectedDates] = useState({});
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Define holidays (you can expand this list as needed)
   const holidays = {
-    '2023-12-25': { disabled: true, disableTouchEvent: true }, // Christmas
-    '2024-01-01': { disabled: true, disableTouchEvent: true }, // New Year's Day
+    '2023-12-25': { disabled: true, disableTouchEvent: true },
+    '2024-01-01': { disabled: true, disableTouchEvent: true },
   };
 
   const onDayPress = (day) => {
@@ -794,98 +29,96 @@ const DemandeAbsence = () => {
     const today = new Date();
     const selectedDate = new Date(dateString);
 
-    // Check if the selected date is in the past
     if (selectedDate < today) {
       Alert.alert("Invalid Date", "You cannot select a date that has already passed.");
       return;
     }
 
-    // Check if the selected date is a weekend
     const dayOfWeek = selectedDate.getDay();
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       Alert.alert("Invalid Date", "Weekends cannot be selected. Please choose another date.");
       return;
     }
 
-    // Check if the selected date is a holiday
     if (holidays[dateString]) {
       Alert.alert("Invalid Date", "This date is a holiday. Please choose another date.");
       return;
     }
 
-    // Toggle the selected date
     const newDates = { ...selectedDates };
     if (newDates[dateString]) {
       delete newDates[dateString];
     } else {
-      newDates[dateString] = { selected: true, selectedColor: 'blue' };
+      newDates[dateString] = { selected: true, selectedColor: '#1e90ff' };
     }
     setSelectedDates(newDates);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const dates = Object.keys(selectedDates);
-    if (dates.length > 0) {
+    if (dates.length === 0) {
+      Alert.alert("No Dates Selected", "Please select one or more dates for your absence.");
+      return;
+    }
+
+    setLoading(true);
+    try {
       const newDemand = {
-        id: pendingDemands.length + 1,
-        firstName,
-        lastName,
+        userId: user.uid,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
         reason,
         dates: dates.join(', '),
         morningChecked,
         afternoonChecked,
         status: 'Pending',
+        createdAt: serverTimestamp()
       };
 
-      // Update the pending demands state
-      const updatedPendingDemands = [...pendingDemands, newDemand];
-      setPendingDemands(updatedPendingDemands);
-
-      // Pass the updated state back to the profile screen
-      router.push({
-        pathname: '/profile',
-        params: { updatedPendingDemands: JSON.stringify(updatedPendingDemands) },
-      });
-
-      Alert.alert("Absence Request Submitted", `You have requested absence for: ${dates.join(', ')}`);
-      clearForm();
-    } else {
-      Alert.alert("No Dates Selected", "Please select one or more dates for your absence.");
+      await setDoc(doc(db, "absenceRequests", Date.now().toString()), newDemand);
+      
+      Alert.alert("Success", "Your absence request has been submitted.");
+      router.back();
+    } catch (error) {
+      console.error("Error submitting request:", error);
+      Alert.alert("Error", "Failed to submit request. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const clearForm = () => {
-    setFirstName('');
-    setLastName('');
-    setReason('sick');
-    setMorningChecked(false);
-    setAfternoonChecked(false);
-    setSelectedDates({});
-  };
-
-  const goToProfile = () => {
-    router.push('/profile');
   };
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Demande d'Absence</Text>
-        <TextInput style={styles.input} onChangeText={setFirstName} value={firstName} placeholder="First Name" />
-        <TextInput style={styles.input} onChangeText={setLastName} value={lastName} placeholder="Last Name" />
+        <View style={styles.header}>
+          <Ionicons 
+            name="arrow-back" 
+            size={24} 
+            color="#1e90ff" 
+            onPress={() => router.back()}
+            style={styles.backButton}
+          />
+          <Text style={styles.title}>Absence Request</Text>
+        </View>
+
+        <View style={styles.userInfoContainer}>
+          <Text style={styles.userInfo}>Employee: {user?.firstName} {user?.lastName}</Text>
+          <Text style={styles.userInfo}>ID: {user?.uid.substring(0, 8)}</Text>
+        </View>
 
         <Text style={styles.subtitle}>Reason of Absence</Text>
-        <RadioButton.Group onValueChange={newReason => setReason(newReason)} value={reason}>
+        <RadioButton.Group onValueChange={setReason} value={reason}>
           <View style={styles.radioContainer}>
-            <RadioButton value="sick" />
+            <RadioButton value="sick" color="#1e90ff" />
             <Text style={styles.label}>Sickness</Text>
           </View>
           <View style={styles.radioContainer}>
-            <RadioButton value="vacation" />
+            <RadioButton value="vacation" color="#1e90ff" />
             <Text style={styles.label}>Vacation</Text>
           </View>
           <View style={styles.radioContainer}>
-            <RadioButton value="personal" />
+            <RadioButton value="personal" color="#1e90ff" />
             <Text style={styles.label}>Personal</Text>
           </View>
         </RadioButton.Group>
@@ -893,41 +126,84 @@ const DemandeAbsence = () => {
         <Text style={styles.subtitle}>Select Absence Days</Text>
         {Object.keys(selectedDates).length > 0 && (
           <View style={styles.selectedDatesContainer}>
-            <Text style={styles.selectedDatesText}>Selected Days: {Object.keys(selectedDates).join(', ')}</Text>
-            <Button mode="outlined" onPress={() => setSelectedDates({})} style={styles.clearButton}>Clear Selected Days</Button>
+            <Text style={styles.selectedDatesText}>
+              Selected: {Object.keys(selectedDates).join(', ')}
+            </Text>
+            <Button 
+              mode="outlined" 
+              onPress={() => setSelectedDates({})} 
+              style={styles.clearButton}
+              labelStyle={{ color: '#ff4444' }}
+            >
+              Clear Selection
+            </Button>
           </View>
         )}
 
-        <Button mode="contained" onPress={() => setIsCalendarVisible(true)} style={styles.button}>
-          {Object.keys(selectedDates).length > 0 ? "Modify Absence Day" : "Choose Absence Day"}
+        <Button 
+          mode="contained" 
+          onPress={() => setIsCalendarVisible(true)} 
+          style={styles.calendarButton}
+          labelStyle={{ color: '#fff' }}
+        >
+          {Object.keys(selectedDates).length > 0 ? "Modify Dates" : "Select Dates"}
         </Button>
 
-        <Modal visible={isCalendarVisible} animationType="slide" transparent={true} onRequestClose={() => setIsCalendarVisible(false)}>
-          <View style={styles.modalContainer}>
+        <Modal visible={isCalendarVisible} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
             <View style={styles.calendarContainer}>
               <Calendar
                 markingType={'custom'}
                 onDayPress={onDayPress}
                 markedDates={{ ...selectedDates, ...holidays }}
-                minDate={new Date().toISOString().split('T')[0]} // Disable past dates
+                minDate={new Date().toISOString().split('T')[0]}
+                theme={{
+                  calendarBackground: '#fff',
+                  todayTextColor: '#1e90ff',
+                  selectedDayBackgroundColor: '#1e90ff',
+                  arrowColor: '#1e90ff',
+                }}
               />
-              <Button mode="outlined" onPress={() => setIsCalendarVisible(false)} style={styles.closeButton}>Close</Button>
+              <Button 
+                mode="contained" 
+                onPress={() => setIsCalendarVisible(false)} 
+                style={styles.closeCalendarButton}
+                labelStyle={{ color: '#fff' }}
+              >
+                Done
+              </Button>
             </View>
           </View>
         </Modal>
 
-        <Text style={styles.subtitle}>Part of the Day Skipped</Text>
+        <Text style={styles.subtitle}>Part of Day</Text>
         <View style={styles.checkboxContainer}>
-          <Checkbox status={morningChecked ? 'checked' : 'unchecked'} onPress={() => setMorningChecked(!morningChecked)} />
+          <Checkbox 
+            status={morningChecked ? 'checked' : 'unchecked'} 
+            onPress={() => setMorningChecked(!morningChecked)}
+            color="#1e90ff"
+          />
           <Text style={styles.label}>Morning</Text>
         </View>
         <View style={styles.checkboxContainer}>
-          <Checkbox status={afternoonChecked ? 'checked' : 'unchecked'} onPress={() => setAfternoonChecked(!afternoonChecked)} />
+          <Checkbox 
+            status={afternoonChecked ? 'checked' : 'unchecked'} 
+            onPress={() => setAfternoonChecked(!afternoonChecked)}
+            color="#1e90ff"
+          />
           <Text style={styles.label}>Afternoon</Text>
         </View>
 
-        <Button mode="contained" onPress={handleSubmit} style={styles.button}>Submit Absence Request</Button>
-        <Button mode="outlined" onPress={goToProfile} style={styles.button}>Back to Profile</Button>
+        <Button 
+          mode="contained" 
+          onPress={handleSubmit} 
+          style={styles.submitButton}
+          loading={loading}
+          disabled={loading || Object.keys(selectedDates).length === 0}
+          labelStyle={{ color: '#fff' }}
+        >
+          {loading ? 'Submitting...' : 'Submit Request'}
+        </Button>
       </ScrollView>
     </SafeAreaView>
   );
@@ -936,25 +212,47 @@ const DemandeAbsence = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 20, // Reduced paddingTop to lift content up
-    paddingHorizontal: 20,
+    backgroundColor: '#f8f9fa',
   },
   content: {
-    paddingBottom: 60, // Reduced paddingBottom to avoid overlap with nav bar
+    padding: 20,
+    paddingBottom: 40,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  backButton: {
+    marginRight: 15,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10, // Reduced marginBottom to lift content up
-    textAlign: 'center',
     color: '#333',
+  },
+  userInfoContainer: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  userInfo: {
+    fontSize: 16,
+    color: '#555',
+    marginBottom: 5,
   },
   subtitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 10, // Reduced marginTop to lift content up
+    marginTop: 15,
     marginBottom: 10,
-    color: '#555',
+    color: '#333',
   },
   radioContainer: {
     flexDirection: 'row',
@@ -971,45 +269,42 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  input: {
-    width: '100%',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-  button: {
-    marginVertical: 10,
-    paddingVertical: 10,
-  },
-  clearButton: {
-    marginVertical: 10,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  calendarContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    width: '90%',
-  },
-  closeButton: {
-    marginTop: 10,
-  },
   selectedDatesContainer: {
-    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 15,
   },
   selectedDatesText: {
     fontSize: 16,
-    color: '#333',
-    marginBottom: 10,
+    color: '#555',
+  },
+  clearButton: {
+    borderColor: '#ff4444',
+  },
+  calendarButton: {
+    marginVertical: 10,
+    backgroundColor: '#1e90ff',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  calendarContainer: {
+    width: '90%',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+  },
+  closeCalendarButton: {
+    marginTop: 10,
+    backgroundColor: '#1e90ff',
+  },
+  submitButton: {
+    marginTop: 20,
+    backgroundColor: '#28a745',
   },
 });
 

@@ -9,12 +9,12 @@ import {
   ActivityIndicator,
   RefreshControl
 } from 'react-native';
-import { useMessaging } from '../context/MessagingContext';
-import { useAuth } from '../context/AuthContext';
+import { useMessaging } from '../../context/MessagingContext';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase/firebaseConfig';
+import { db } from '../../firebase/firebaseConfig';
 
 const ConversationList = () => {
   const { 
@@ -29,7 +29,6 @@ const ConversationList = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [processedConversations, setProcessedConversations] = useState([]);
 
-  // Check if user is authenticated
   if (!currentUser) {
     return (
       <View style={styles.emptyContainer}>
@@ -96,8 +95,8 @@ const ConversationList = () => {
 
   const handleConversationPress = (conversation) => {
     setCurrentConversation(conversation);
-    navigation.navigate('Chat', { 
-      conversationId: conversation.id,
+    navigation.navigate('messages/MessageDetail', { 
+      id: conversation.id,
       title: conversation.participantNames?.join(', ') || 'Chat'
     });
   };
@@ -154,7 +153,7 @@ const ConversationList = () => {
         <Text style={styles.title}>Messages</Text>
         <TouchableOpacity 
           style={styles.newMessageButton}
-          onPress={() => navigation.navigate('NewConversation')}
+          onPress={() => navigation.navigate('messages/ComposeMessage')}
         >
           <Icon name="add" size={24} color="#fff" />
         </TouchableOpacity>
@@ -197,7 +196,7 @@ const ConversationList = () => {
               </Text>
               <TouchableOpacity
                 style={styles.startChatButton}
-                onPress={() => navigation.navigate('NewConversation')}
+                onPress={() => navigation.navigate('messages/ComposeMessage')}
               >
                 <Text style={styles.startChatText}>Start Chatting</Text>
               </TouchableOpacity>

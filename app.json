@@ -3,7 +3,10 @@
     "name": "new-project",
     "slug": "new-project",
     "version": "1.0.0",
-    "platform": ["ios", "android"],
+    "platform": [
+      "ios",
+      "android"
+    ],
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -19,10 +22,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      
       "package": "com.tmapp.newproject",
       "googleServiceFile": "./google-services.json"
-      
     },
     "web": {
       "bundler": "metro",
@@ -33,8 +34,6 @@
       "expo-router",
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      
-
       [
         "expo-splash-screen",
         {
@@ -44,13 +43,16 @@
           "backgroundColor": "#ffffff"
         }
       ],
-     ["expo-build-properties",
-    {
-      "ios":{
-       
-        "useFrameworks": "static"
-      }
-    }] 
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
