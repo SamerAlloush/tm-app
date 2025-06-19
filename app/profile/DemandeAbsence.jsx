@@ -5,8 +5,8 @@ import { RadioButton, Checkbox, Button } from 'react-native-paper';
 import { Calendar } from 'react-native-calendars';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase/firebaseConfig';
+//import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+//import { db } from '../../firebase/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 
 const DemandeAbsence = () => {

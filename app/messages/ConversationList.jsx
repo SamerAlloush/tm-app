@@ -11,65 +11,45 @@ import {
 } from 'react-native';
 import { useMessaging } from '../../context/MessagingContext';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase/firebaseConfig';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeIn, Layout } from 'react-native-reanimated';
 
 const ConversationList = () => {
+  const router = useRouter();
   const { 
     conversations, 
     loading, 
     setCurrentConversation,
-    refreshConversations
+    refreshConversations,
+    loadMessages
   } = useMessaging();
   const { currentUser } = useAuth();
-  const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [processedConversations, setProcessedConversations] = useState([]);
-
-  if (!currentUser) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Icon name="person-off" size={50} color="#ccc" />
-        <Text style={styles.emptyTitle}>Not Authenticated</Text>
-        <Text style={styles.emptyText}>
-          Please log in to view your conversations
-        </Text>
-        <TouchableOpacity
-          style={styles.startChatButton}
-          onPress={() => navigation.navigate('login')}
-        >
-          <Text style={styles.startChatText}>Log In</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   useEffect(() => {
     const processConversations = async () => {
       const updated = await Promise.all(conversations.map(async convo => {
         const participantNames = await Promise.all(
           convo.participants
-            .filter(id => id !== currentUser.uid)
+            .filter(id => !currentUser || id !== currentUser.uid)
             .map(async userId => {
-              const userDoc = await getDoc(doc(db, 'users', userId));
-              return userDoc.exists() ? userDoc.data().displayName : 'Unknown';
+              const response = await fetch(`${apiUrl}/users/${userId}`);
+              const userData = await response.json();
+              return userData.displayName;
             })
         );
-
-        let lastMessage = 'No messages yet';
-        if (convo.lastMessage) {
-          lastMessage = convo.lastMessage.length > 30 
-            ? `${convo.lastMessage.substring(0, 30)}...` 
-            : convo.lastMessage;
-        }
 
         return {
           ...convo,
           participantNames,
-          lastMessage,
+          lastMessage: convo.lastMessage 
+            ? convo.lastMessage.length > 30 
+              ? `${convo.lastMessage.substring(0, 30)}...` 
+              : convo.lastMessage
+            : 'No messages yet',
           unreadCount: convo.unreadCount || 0
         };
       }));
@@ -79,7 +59,7 @@ const ConversationList = () => {
     if (conversations.length > 0) {
       processConversations();
     }
-  }, [conversations, currentUser.uid]);
+  }, [conversations, currentUser?.uid]);
 
   const filteredConversations = processedConversations.filter(convo => 
     convo.participantNames?.some(name => 
@@ -93,59 +73,28 @@ const ConversationList = () => {
     setRefreshing(false);
   };
 
-  const handleConversationPress = (conversation) => {
+  const handleConversationPress = async (conversation) => {
+    if (!conversation?.id) return;
+    
     setCurrentConversation(conversation);
-    navigation.navigate('messages/MessageDetail', { 
-      id: conversation.id,
-      title: conversation.participantNames?.join(', ') || 'Chat'
-    });
-  };
+    const unsubscribe = await loadMessages(conversation.id);
+    
+    if (typeof unsubscribe !== 'function') {
+      console.error('Failed to get unsubscribe function');
+      return;
+    }
 
-  const renderConversationItem = ({ item }) => (
-    <TouchableOpacity 
-      style={[
-        styles.conversationItem,
-        item.unreadCount > 0 && styles.unreadConversation
-      ]}
-      onPress={() => handleConversationPress(item)}
-    >
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>
-          {item.participantNames?.[0]?.charAt(0)?.toUpperCase() || '?'}
-        </Text>
-        {item.unreadCount > 0 && (
-          <View style={styles.unreadBadge}>
-            <Text style={styles.unreadText}>
-              {item.unreadCount > 9 ? '9+' : item.unreadCount}
-            </Text>
-          </View>
-        )}
-      </View>
-      
-      <View style={styles.conversationInfo}>
-        <View style={styles.infoHeader}>
-          <Text style={styles.conversationName} numberOfLines={1}>
-            {item.participantNames?.join(', ') || 'Group Chat'}
-          </Text>
-          <Text style={styles.time}>
-            {item.lastUpdated?.toDate().toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
-          </Text>
-        </View>
-        <Text 
-          style={[
-            styles.lastMessage,
-            item.unreadCount > 0 && styles.unreadMessage
-          ]} 
-          numberOfLines={1}
-        >
-          {item.lastMessage}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+    router.push({
+      pathname: `/messages/${conversation.id}`,
+      params: { title: conversation.participantNames?.join(', ') || 'Chat' }
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  };
 
   return (
     <View style={styles.container}>
@@ -153,14 +102,14 @@ const ConversationList = () => {
         <Text style={styles.title}>Messages</Text>
         <TouchableOpacity 
           style={styles.newMessageButton}
-          onPress={() => navigation.navigate('messages/ComposeMessage')}
+          onPress={() => router.push('/messages/compose')}
         >
-          <Icon name="add" size={24} color="#fff" />
+          <Ionicons name="add" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
       
       <View style={styles.searchContainer}>
-        <Icon name="search" size={20} color="#666" style={styles.searchIcon} />
+        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search conversations..."
@@ -179,7 +128,56 @@ const ConversationList = () => {
         <FlatList
           data={filteredConversations}
           keyExtractor={item => item.id}
-          renderItem={renderConversationItem}
+          renderItem={({ item }) => (
+            <Animated.View
+              entering={FadeIn.duration(300)}
+              layout={Layout.duration(300)}
+            >
+              <TouchableOpacity 
+                style={[
+                  styles.conversationItem,
+                  item.unreadCount > 0 && styles.unreadConversation
+                ]}
+                onPress={() => handleConversationPress(item)}
+              >
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {item.participantNames?.[0]?.charAt(0)?.toUpperCase() || '?'}
+                  </Text>
+                  {item.unreadCount > 0 && (
+                    <View style={styles.unreadBadge}>
+                      <Text style={styles.unreadText}>
+                        {item.unreadCount > 9 ? '9+' : item.unreadCount}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                
+                <View style={styles.conversationInfo}>
+                  <View style={styles.infoHeader}>
+                    <Text style={styles.conversationName} numberOfLines={1}>
+                      {item.participantNames?.join(', ') || 'Group Chat'}
+                    </Text>
+                    <Text style={styles.time}>
+                      {item.lastUpdated?.toDate()?.toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </Text>
+                  </View>
+                  <Text 
+                    style={[
+                      styles.lastMessage,
+                      item.unreadCount > 0 && styles.unreadMessage
+                    ]} 
+                    numberOfLines={1}
+                  >
+                    {item.lastMessage}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -189,14 +187,14 @@ const ConversationList = () => {
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Icon name="chat" size={50} color="#ccc" />
+              <Ionicons name="chatbubbles" size={50} color="#ccc" />
               <Text style={styles.emptyTitle}>No conversations</Text>
               <Text style={styles.emptyText}>
                 Start a new conversation by tapping the + button
               </Text>
               <TouchableOpacity
                 style={styles.startChatButton}
-                onPress={() => navigation.navigate('messages/ComposeMessage')}
+                onPress={() => router.push('/messages/compose')}
               >
                 <Text style={styles.startChatText}>Start Chatting</Text>
               </TouchableOpacity>

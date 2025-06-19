@@ -1,228 +1,118 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Alert } from 'react-native';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { useAuth } from './AuthContext';
 
 const MessagingContext = createContext();
 
 export const MessagingProvider = ({ children }) => {
+  const { currentUser } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
-  const [filter, setFilter] = useState('all');
-  const [sort, setSort] = useState('newest');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Simulate loading conversations from API
-  useEffect(() => {
-    const loadConversations = async () => {
-      try {
-        // Replace with actual API call
-        const mockConversations = [
-          {
-            id: '1',
-            subject: 'Project Update',
-            participants: ['team@company.com', 'manager@company.com'],
-            messages: [
-              {
-                id: '1-1',
-                sender: 'team@company.com',
-                content: 'The project is on track for completion next week.',
-                timestamp: '2023-05-15T10:30:00Z',
-                read: true,
-                attachments: []
-              },
-              {
-                id: '1-2',
-                sender: 'manager@company.com',
-                content: 'Great to hear! Any issues we should know about?',
-                timestamp: '2023-05-15T11:15:00Z',
-                read: true,
-                attachments: []
-              }
-            ],
-            starred: false,
-            lastUpdated: '2023-05-15T11:15:00Z'
-          },
-          // Add more mock conversations
-        ];
-        
-        setConversations(mockConversations);
-        setIsLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setIsLoading(false);
+  const apiUrl = process.env.REACT_APP_API_URL;
+
+  // Fetch all conversations for the current user
+  const fetchConversations = useCallback(async () => {
+    setLoading(true);
+    try {
+      let response;
+      if (currentUser?.id) {
+        response = await fetch(`${apiUrl}/users/${currentUser.id}/conversations`);
+      } else {
+        // Fetch all conversations or empty array for guests
+        response = await fetch(`${apiUrl}/conversations`);
       }
-    };
-
-    loadConversations();
-  }, []);
-
-  const filteredConversations = useCallback(() => {
-    let result = [...conversations];
-    
-    // Apply filter
-    switch (filter) {
-      case 'unread':
-        result = result.filter(conv => 
-          conv.messages.some(msg => 
-            !msg.read && msg.sender !== 'currentUser@company.com'
-          )
-        );
-        break;
-      case 'starred':
-        result = result.filter(conv => conv.starred);
-        break;
-      default:
-        // 'all' - no filter
-        break;
+      if (!response.ok) throw new Error('Failed to fetch conversations');
+      const data = await response.json();
+      setConversations(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    
-    // Apply search
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(conv => 
-        conv.subject.toLowerCase().includes(query) ||
-        conv.participants.some(p => p.toLowerCase().includes(query)) ||
-        conv.messages.some(msg => msg.content.toLowerCase().includes(query))
-      );
+  }, [currentUser, apiUrl]);
+
+  // Fetch messages for a conversation
+  const loadMessages = useCallback(async (conversationId) => {
+    if (!conversationId) return;
+    setLoading(true);
+    try {
+      const response = await fetch(`${apiUrl}/conversations/${conversationId}/messages`);
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      const messages = await response.json();
+      setSelectedConversation(prev => ({ ...prev, messages }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    
-    // Apply sort
-    switch (sort) {
-      case 'newest':
-        result.sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated));
-        break;
-      case 'oldest':
-        result.sort((a, b) => new Date(a.lastUpdated) - new Date(b.lastUpdated));
-        break;
-      default:
-        break;
+  }, [apiUrl]);
+
+  // Create a new conversation
+  const createConversation = useCallback(async (participants, subject) => {
+    try {
+      const response = await fetch(`${apiUrl}/conversations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participants, subject }),
+      });
+      if (!response.ok) throw new Error('Failed to create conversation');
+      const data = await response.json();
+      return data.id;
+    } catch (err) {
+      setError(err.message);
+      throw err;
     }
-    
-    return result;
-  }, [conversations, filter, searchQuery, sort]);
+  }, [apiUrl]);
 
-  const starConversation = (conversationId) => {
-    setConversations(prev => 
-      prev.map(conv => 
-        conv.id === conversationId 
-          ? { ...conv, starred: !conv.starred } 
-          : conv
-      )
-    );
-  };
-
-  const createNewMessage = (recipients, subject, content, attachments = []) => {
-    const newMessage = {
-      id: Date.now().toString(),
-      sender: 'currentUser@company.com',
-      content,
-      timestamp: new Date().toISOString(),
-      read: true,
-      attachments
-    };
-
-    // Check if conversation with these recipients already exists
-    const existingConv = conversations.find(conv => 
-      conv.participants.every(p => 
-        [...recipients, 'currentUser@company.com'].includes(p)
-      ) && 
-      conv.subject === subject
-    );
-
-    if (existingConv) {
-      // Add to existing conversation
-      setConversations(prev => 
-        prev.map(conv => 
-          conv.id === existingConv.id
-            ? {
-                ...conv,
-                messages: [...conv.messages, newMessage],
-                lastUpdated: new Date().toISOString()
-              }
-            : conv
-        )
-      );
-    } else {
-      // Create new conversation
-      const newConversation = {
-        id: Date.now().toString(),
-        subject,
-        participants: [...recipients, 'currentUser@company.com'],
-        messages: [newMessage],
-        starred: false,
-        lastUpdated: new Date().toISOString()
-      };
-      setConversations(prev => [newConversation, ...prev]);
+  // Send a message in a conversation
+  const sendMessage = useCallback(async (conversationId, content, attachments = []) => {
+    try {
+      const sender = currentUser?.id || 'Guest';
+      const response = await fetch(`${apiUrl}/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, attachments, sender }),
+      });
+      if (!response.ok) throw new Error('Failed to send message');
+      // Optionally refresh messages
+      await loadMessages(conversationId);
+    } catch (err) {
+      setError(err.message);
+      throw err;
     }
-  };
+  }, [apiUrl, loadMessages, currentUser]);
 
-  const markAsRead = (conversationId) => {
-    setConversations(prev => 
-      prev.map(conv => 
-        conv.id === conversationId
-          ? {
-              ...conv,
-              messages: conv.messages.map(msg => 
-                !msg.read && msg.sender !== 'currentUser@company.com'
-                  ? { ...msg, read: true }
-                  : msg
-              )
-            }
-          : conv
-      )
-    );
-  };
-
-  const deleteConversation = (conversationId) => {
-    Alert.alert(
-      "Delete Conversation",
-      "Are you sure you want to delete this conversation?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", 
-          style: "destructive",
-          onPress: () => {
-            setConversations(prev => prev.filter(conv => conv.id !== conversationId));
-            if (selectedConversation?.id === conversationId) {
-              setSelectedConversation(null);
-            }
-          }
-        }
-      ]
-    );
-  };
+  // Mark messages as read (if supported by backend)
+  const markMessagesAsRead = useCallback(async (conversationId, messageIds) => {
+    try {
+      await fetch(`${apiUrl}/conversations/${conversationId}/messages/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageIds }),
+      });
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [apiUrl]);
 
   return (
-    <MessagingContext.Provider
-      value={{
-        conversations: filteredConversations(),
-        selectedConversation,
-        setSelectedConversation,
-        starConversation,
-        filter,
-        setFilter,
-        sort,
-        setSort,
-        searchQuery,
-        setSearchQuery,
-        createNewMessage,
-        markAsRead,
-        deleteConversation,
-        isLoading,
-        error
-      }}
-    >
+    <MessagingContext.Provider value={{
+      conversations,
+      selectedConversation,
+      setSelectedConversation,
+      fetchConversations,
+      createConversation,
+      sendMessage,
+      markMessagesAsRead,
+      loadMessages,
+      loading,
+      error
+    }}>
       {children}
     </MessagingContext.Provider>
   );
 };
 
-export const useMessaging = () => {
-  const context = useContext(MessagingContext);
-  if (!context) {
-    throw new Error('useMessaging must be used within a MessagingProvider');
-  }
-  return context;
-};
+export const useMessaging = () => useContext(MessagingContext);

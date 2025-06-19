@@ -5,8 +5,6 @@ import { Calendar } from 'react-native-calendars';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase/firebaseConfig';
 
 const ProfileDetails = () => {
   const router = useRouter();
@@ -18,23 +16,25 @@ const ProfileDetails = () => {
   const [activeTab, setActiveTab] = useState('pending');
 
   useEffect(() => {
-    if (!user) return;
-
-    const q = query(
-      collection(db, "absenceRequests"),
-      where("userId", "==", user.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const requests = [];
-      querySnapshot.forEach((doc) => {
-        requests.push({ id: doc.id, ...doc.data() });
-      });
-      setUserRequests(requests);
+    if (!user) {
+      setUserRequests([]);
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+      return;
+    }
+    const fetchRequests = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/users/${user.id}/absenceRequests`);
+        if (!response.ok) throw new Error('Failed to fetch absence requests');
+        const data = await response.json();
+        setUserRequests(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRequests();
   }, [user]);
 
   const markedDates = userRequests.reduce((acc, request) => {
@@ -108,12 +108,12 @@ const ProfileDetails = () => {
       <View style={styles.userInfo}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
-            {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+            {user?.firstName?.charAt(0) || 'G'}{user?.lastName?.charAt(0) || 'U'}
           </Text>
         </View>
-        <Text style={styles.userName}>{user?.firstName} {user?.lastName}</Text>
-        <Text style={styles.userEmail}>{user?.email}</Text>
-        <Text style={styles.userId}>Employee ID: {user?.uid.substring(0, 8)}</Text>
+        <Text style={styles.userName}>{user ? `${user.firstName} ${user.lastName}` : 'Guest User'}</Text>
+        <Text style={styles.userEmail}>{user?.email || 'guest@example.com'}</Text>
+        <Text style={styles.userId}>{user ? `Employee ID: ${user?.uid?.substring(0, 8)}` : 'No Employee ID'}</Text>
       </View>
 
       {/* Calendar */}
