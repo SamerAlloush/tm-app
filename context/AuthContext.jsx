@@ -42,7 +42,48 @@ export function AuthProvider({ children }) {
       });
       if (!response.ok) throw new Error('Signup failed');
       const data = await response.json();
-      setCurrentUser(data.user || { email }); // Adjust as per backend response
+      // Don't set currentUser yet - wait for OTP verification
+      return data;
+    } catch (error) {
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOtp = async (email, otpCode) => {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      const response = await fetch(`${apiUrl}/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp: otpCode }),
+      });
+      if (!response.ok) throw new Error('Invalid OTP');
+      const data = await response.json();
+      // Don't set currentUser here - let user login with credentials after verification
+      return data;
+    } catch (error) {
+      setAuthError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendOtp = async (email) => {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      const response = await fetch(`${apiUrl}/auth/resend-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!response.ok) throw new Error('Failed to resend OTP');
+      const data = await response.json();
       return data;
     } catch (error) {
       setAuthError(error.message);
@@ -58,7 +99,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, signup, logout, loading, authError }}>
+    <AuthContext.Provider value={{ user: currentUser, currentUser, login, signup, logout, verifyOtp, resendOtp, loading, authError }}>
       {children}
     </AuthContext.Provider>
   );

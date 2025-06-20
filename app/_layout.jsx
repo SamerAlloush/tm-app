@@ -57,7 +57,7 @@ const _layout = () => {
                 })}
               />
               <Tabs.Screen
-                name="messages/messageDetail"
+                name="messages/[id]"
                 options={{
                   title: 'Message',
                 }}

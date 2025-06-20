@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Button, Alert, StyleSheet, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 
 const Login = () => {
@@ -8,13 +8,25 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { login, loading, authError } = useAuth();
+
+  useEffect(() => {
+    // Pre-fill email if coming from OTP verification
+    if (params.verifiedEmail) {
+      setEmail(params.verifiedEmail);
+    }
+    
+    // Show success message if coming from OTP verification
+    if (params.message) {
+      Alert.alert('Success', params.message);
+    }
+  }, [params]);
 
   const handleLogin = async () => {
     try {
       await login(email, password);
-      Alert.alert('Login successful');
-      // router.push('/dashboard'); // Uncomment and adjust as needed
+      router.replace('/profile');
     } catch (error) {
       // Error handled by context
     }
@@ -24,7 +36,9 @@ const Login = () => {
     <View style={styles.container}>
       <View style={styles.card}>
         <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to your account</Text>
+        <Text style={styles.subtitle}>
+          {params.verifiedEmail ? 'Your account is verified! Please sign in.' : 'Sign in to your account'}
+        </Text>
         {authError ? <Text style={styles.error}>{authError}</Text> : null}
         <TextInput
           style={styles.input}

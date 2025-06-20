@@ -17,7 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
-import { Video } from 'expo-av';
+import { VideoView } from 'expo-video';
 import { uploadFile } from '../../utils/storage';
 
 const MessageDetail = () => {
@@ -162,12 +162,12 @@ const MessageDetail = () => {
                     resizeMode="contain"
                   />
                 ) : (
-                  <Video
+                  <VideoView
                     source={{ uri: attachment.uri }}
                     style={styles.media}
-                    resizeMode="contain"
-                    useNativeControls
-                    isLooping
+                    contentFit="contain"
+                    allowsFullscreen
+                    showsTimecodes
                   />
                 )}
               </View>
@@ -192,11 +192,10 @@ const MessageDetail = () => {
                 {att.type === 'image' ? (
                   <Image source={{ uri: att.uri }} style={styles.attachmentImage} />
                 ) : (
-                  <Video
+                  <VideoView
                     source={{ uri: att.uri }}
                     style={styles.attachmentImage}
-                    resizeMode="cover"
-                    shouldPlay={false}
+                    contentFit="cover"
                   />
                 )}
                 <TouchableOpacity 
