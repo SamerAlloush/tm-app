@@ -7,6 +7,7 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
+  const [accessToken, setAccessToken] = useState(null);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState(null);
 
@@ -19,9 +20,14 @@ export function AuthProvider({ children }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      if (!response.ok) throw new Error('Invalid credentials');
+      
       const data = await response.json();
-      setCurrentUser(data.user || { email }); // Adjust as per backend response
+      if (!response.ok) {
+        throw new Error(data.message || 'Invalid credentials');
+      }
+
+      setCurrentUser(data.user);
+      setAccessToken(data.token);
       return data;
     } catch (error) {
       setAuthError(error.message);
@@ -95,11 +101,12 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     setCurrentUser(null);
+    setAccessToken(null);
     // Optionally, call backend to invalidate token/session
   };
 
   return (
-    <AuthContext.Provider value={{ user: currentUser, currentUser, login, signup, logout, verifyOtp, resendOtp, loading, authError }}>
+    <AuthContext.Provider value={{ user: currentUser, currentUser, accessToken, login, signup, logout, verifyOtp, resendOtp, loading, authError }}>
       {children}
     </AuthContext.Provider>
   );

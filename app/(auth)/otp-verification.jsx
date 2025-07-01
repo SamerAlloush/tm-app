@@ -78,19 +78,14 @@ const OtpVerification = () => {
 
     try {
       await verifyOtp(params.email, otpCode);
-      Alert.alert(
-        'Success', 
-        'Account verified successfully! You can now login with your credentials.', 
-        [
-          { 
-            text: 'OK', 
-            onPress: () => router.replace({
-              pathname: '/(auth)/login',
-              params: { verifiedEmail: params.email, message: 'Account verified successfully! Please login.' }
-            })
-          }
-        ]
-      );
+      // Directly redirect to login after successful verification
+      router.replace({
+        pathname: '/(auth)/login',
+        params: {
+          verifiedEmail: params.email,
+          message: 'Account verified successfully! Please login.'
+        }
+      });
     } catch (error) {
       // Error handled by context
     }

@@ -1,6 +1,6 @@
 // app/profile/DemandeAbsence.jsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Modal, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Modal, SafeAreaView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { RadioButton, Checkbox, Button } from 'react-native-paper';
 import { Calendar } from 'react-native-calendars';
 import { useRouter } from 'expo-router';
@@ -8,16 +8,19 @@ import { useAuth } from '../../context/AuthContext';
 //import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 //import { db } from '../../firebase/firebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 
 const DemandeAbsence = () => {
   const router = useRouter();
-  const { user } = useAuth();
+  const { currentUser, accessToken } = useAuth();
   const [reason, setReason] = useState('sick');
   const [morningChecked, setMorningChecked] = useState(false);
   const [afternoonChecked, setAfternoonChecked] = useState(false);
   const [selectedDates, setSelectedDates] = useState({});
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const apiUrl = 'http://localhost:5000/api';
 
   const holidays = {
     '2023-12-25': { disabled: true, disableTouchEvent: true },
@@ -27,6 +30,7 @@ const DemandeAbsence = () => {
   const onDayPress = (day) => {
     const { dateString } = day;
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize today's date
     const selectedDate = new Date(dateString);
 
     if (selectedDate < today) {
@@ -61,28 +65,40 @@ const DemandeAbsence = () => {
       return;
     }
 
+    if (!morningChecked && !afternoonChecked) {
+      Alert.alert("Time Not Selected", "Please select at least one part of the day (Morning or Afternoon).");
+      return;
+    }
+
     setLoading(true);
     try {
-      const newDemand = {
-        userId: user.uid,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        reason,
-        dates: dates.join(', '),
-        morningChecked,
-        afternoonChecked,
-        status: 'Pending',
-        createdAt: serverTimestamp()
-      };
+      const response = await fetch(`${apiUrl}/absences`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          email: currentUser.email,
+          fullName: currentUser.fullName,
+          reason,
+          dates: dates.join(', '),
+          morning: morningChecked,
+          afternoon: afternoonChecked,
+          status: 'Pending',
+        }),
+      });
 
-      await setDoc(doc(db, "absenceRequests", Date.now().toString()), newDemand);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to submit request' }));
+        throw new Error(errorData.message);
+      }
       
       Alert.alert("Success", "Your absence request has been submitted.");
       router.back();
     } catch (error) {
       console.error("Error submitting request:", error);
-      Alert.alert("Error", "Failed to submit request. Please try again.");
+      Alert.alert("Error", error.message || "Failed to submit request. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -103,8 +119,10 @@ const DemandeAbsence = () => {
         </View>
 
         <View style={styles.userInfoContainer}>
-          <Text style={styles.userInfo}>Employee: {user?.firstName} {user?.lastName}</Text>
-          <Text style={styles.userInfo}>ID: {user?.uid.substring(0, 8)}</Text>
+          <Text style={styles.userInfo}>
+            Employee: {currentUser?.fullName}
+          </Text>
+          <Text style={styles.userInfo}>Email: {currentUser?.email}</Text>
         </View>
 
         <Text style={styles.subtitle}>Reason of Absence</Text>
@@ -198,11 +216,11 @@ const DemandeAbsence = () => {
           mode="contained" 
           onPress={handleSubmit} 
           style={styles.submitButton}
-          loading={loading}
-          disabled={loading || Object.keys(selectedDates).length === 0}
           labelStyle={{ color: '#fff' }}
+          loading={loading}
+          disabled={loading}
         >
-          {loading ? 'Submitting...' : 'Submit Request'}
+          Submit Request
         </Button>
       </ScrollView>
     </SafeAreaView>
@@ -212,19 +230,18 @@ const DemandeAbsence = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f5f5',
   },
   content: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   backButton: {
-    marginRight: 15,
+    marginRight: 16,
   },
   title: {
     fontSize: 24,
@@ -233,78 +250,111 @@ const styles = StyleSheet.create({
   },
   userInfoContainer: {
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      },
+      default: {
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+    }),
   },
   userInfo: {
     fontSize: 16,
-    color: '#555',
-    marginBottom: 5,
+    color: '#333',
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 15,
-    marginBottom: 10,
+    fontWeight: '600',
     color: '#333',
+    marginBottom: 16,
   },
   radioContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   label: {
-    marginLeft: 8,
     fontSize: 16,
     color: '#333',
+    marginLeft: 8,
   },
   selectedDatesContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      },
+      default: {
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+    }),
   },
   selectedDatesText: {
     fontSize: 16,
-    color: '#555',
+    color: '#333',
+    marginBottom: 12,
   },
   clearButton: {
     borderColor: '#ff4444',
   },
   calendarButton: {
-    marginVertical: 10,
     backgroundColor: '#1e90ff',
+    marginBottom: 24,
   },
   modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   calendarContainer: {
-    width: '90%',
     backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
+    padding: 16,
+    borderRadius: 12,
+    width: '90%',
+    maxWidth: 400,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+      },
+      default: {
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+      },
+    }),
   },
   closeCalendarButton: {
-    marginTop: 10,
     backgroundColor: '#1e90ff',
+    marginTop: 16,
   },
   submitButton: {
-    marginTop: 20,
-    backgroundColor: '#28a745',
+    backgroundColor: '#1e90ff',
+    marginTop: 24,
+    marginBottom: 32,
   },
 });
 

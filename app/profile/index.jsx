@@ -16,6 +16,7 @@ const ProfileDetails = () => {
   const [activeTab, setActiveTab] = useState('pending');
 
   useEffect(() => {
+    console.log('User object in profile:', JSON.stringify(user, null, 2));
     if (!user) {
       setUserRequests([]);
       setLoading(false);
@@ -93,82 +94,85 @@ const ProfileDetails = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1e90ff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>My Profile</Text>
-        <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-          <MaterialIcons name="logout" size={24} color="#ff4444" />
-        </TouchableOpacity>
-      </View>
-
-      {/* User Info */}
-      <View style={styles.userInfo}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user?.firstName?.charAt(0) || 'G'}{user?.lastName?.charAt(0) || 'U'}
-          </Text>
-        </View>
-        <Text style={styles.userName}>{user ? `${user.firstName} ${user.lastName}` : 'Guest User'}</Text>
-        <Text style={styles.userEmail}>{user?.email || 'guest@example.com'}</Text>
-        <Text style={styles.userId}>{user ? `Employee ID: ${user?.uid?.substring(0, 8)}` : 'No Employee ID'}</Text>
-      </View>
-
-      {/* Calendar */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Approved Absences</Text>
-        <Calendar
-          markingType={'multi-dot'}
-          markedDates={markedDates}
-          style={styles.calendar}
-          theme={{
-            calendarBackground: '#fff',
-            todayTextColor: '#1e90ff',
-            selectedDayBackgroundColor: '#1e90ff',
-            arrowColor: '#1e90ff',
-          }}
-        />
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => router.push('/profile/DemandeAbsence')}
-        >
-          <MaterialIcons name="event-available" size={20} color="#fff" />
-          <Text style={styles.actionButtonText}>Request Time Off</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'pending' && styles.activeTab]}
-          onPress={() => setActiveTab('pending')}
-        >
-          <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
-            Pending ({pendingRequests.length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'approved' && styles.activeTab]}
-          onPress={() => setActiveTab('approved')}
-        >
-          <Text style={[styles.tabText, activeTab === 'approved' && styles.activeTabText]}>
-            Approved ({approvedRequests.length})
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Requests List */}
+      {/* The main content is now inside a FlatList to make it scrollable */}
       <FlatList
         data={activeTab === 'pending' ? pendingRequests : approvedRequests}
         keyExtractor={(item) => item.id}
         renderItem={renderRequestItem}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <>
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color="#1e90ff" />
+              </TouchableOpacity>
+              <Text style={styles.title}>My Profile</Text>
+              <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+                <MaterialIcons name="logout" size={24} color="#ff4444" />
+              </TouchableOpacity>
+            </View>
+
+            {/* User Info */}
+            <View style={styles.userInfo}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {user?.fullName?.charAt(0) || 'G'}
+                </Text>
+              </View>
+              <Text style={styles.userName}>{user ? user.fullName : 'Guest User'}</Text>
+              <Text style={styles.userEmail}>{user?.email || 'guest@example.com'}</Text>
+              <Text style={styles.userRole}>{user ? `Role: ${user?.role}` : 'No Role Assigned'}</Text>
+            </View>
+
+            {/* Calendar */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Approved Absences</Text>
+              <Calendar
+                markingType={'multi-dot'}
+                markedDates={markedDates}
+                style={styles.calendar}
+                theme={{
+                  calendarBackground: '#fff',
+                  todayTextColor: '#1e90ff',
+                  selectedDayBackgroundColor: '#1e90ff',
+                  arrowColor: '#1e90ff',
+                }}
+              />
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => router.push('/profile/DemandeAbsence')}
+              >
+                <MaterialIcons name="event-available" size={20} color="#fff" />
+                <Text style={styles.actionButtonText}>Request Time Off</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Tabs */}
+            <View style={styles.tabs}>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 'pending' && styles.activeTab]}
+                onPress={() => setActiveTab('pending')}
+              >
+                <Text style={[styles.tabText, activeTab === 'pending' && styles.activeTabText]}>
+                  Pending ({pendingRequests.length})
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 'approved' && styles.activeTab]}
+                onPress={() => setActiveTab('approved')}
+              >
+                <Text style={[styles.tabText, activeTab === 'approved' && styles.activeTabText]}>
+                  Approved ({approvedRequests.length})
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <MaterialIcons 
@@ -306,10 +310,11 @@ const styles = StyleSheet.create({
     color: '#555',
     marginTop: 5,
   },
-  userId: {
+  userRole: {
     fontSize: 14,
     color: '#666',
     marginTop: 5,
+    fontStyle: 'italic',
   },
   section: {
     backgroundColor: '#fff',

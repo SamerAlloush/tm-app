@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator, Modal, FlatList, Pressable, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ActivityIndicator, Modal, FlatList, Pressable, SafeAreaView, KeyboardAvoidingView, ScrollView, Platform, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 
@@ -14,6 +14,7 @@ const roleOptions = [
 ];
 
 const Signup = () => {
+  const { height } = useWindowDimensions();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -42,10 +43,7 @@ const Signup = () => {
     }
     
     try {
-      // Call signup API - this creates account and sends OTP
       await signup(email, password, name, phone, [role]);
-      
-      // Automatically redirect to OTP verification screen
       router.push({
         pathname: '/(auth)/otp-verification',
         params: { 
@@ -53,9 +51,7 @@ const Signup = () => {
           message: 'Account created successfully! Please check your email for the verification code.'
         }
       });
-      
     } catch (error) {
-      // Error handled by AuthContext and displayed via authError state
       console.error('Signup error:', error);
     }
   };
@@ -66,249 +62,387 @@ const Signup = () => {
         style={styles.keyboardView} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.card}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Sign up to get started</Text>
-          {authError ? <Text style={styles.error}>{authError}</Text> : null}
-          <TextInput
-            style={styles.input}
-            placeholder="Full Name"
-            value={name}
-            onChangeText={setName}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Phone"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-          />
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={[styles.input, { flex: 1, marginBottom: 0 }]}
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.toggleBtn}>
-              <Text style={{ color: '#007AFF' }}>{showPassword ? 'Hide' : 'Show'}</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.dropdownContainer}>
-            <Text style={styles.pickerLabel}>Select Role:</Text>
-            <TouchableOpacity
-              style={styles.dropdown}
-              onPress={() => setDropdownVisible(true)}
-            >
-              <Text style={styles.dropdownText}>{roleOptions.find(opt => opt.value === role)?.label}</Text>
-            </TouchableOpacity>
-            <Modal
-              visible={dropdownVisible}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setDropdownVisible(false)}
-            >
-              <Pressable style={styles.modalOverlay} onPress={() => setDropdownVisible(false)}>
-                <View style={styles.dropdownList}>
-                  <FlatList
-                    data={roleOptions}
-                    keyExtractor={item => item.value}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={styles.dropdownItem}
-                        onPress={() => {
-                          setRole(item.value);
-                          setDropdownVisible(false);
-                        }}
-                      >
-                        <Text style={[styles.dropdownItemText, role === item.value && styles.dropdownItemTextSelected]}>{item.label}</Text>
-                      </TouchableOpacity>
-                    )}
-                  />
-                </View>
-              </Pressable>
-            </Modal>
-          </View>
-          <TouchableOpacity 
-            style={[styles.button, loading && styles.buttonDisabled]} 
-            onPress={handleSignup} 
-            disabled={loading}
-          >
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator color="#fff" size="small" />
-                <Text style={styles.loadingText}>Creating Account...</Text>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollViewContent,
+            { minHeight: height - 40 } // Account for SafeAreaView padding
+          ]}
+        >
+          <View style={styles.card}>
+            <View style={styles.header}>
+              <Text style={styles.title}>Create Account</Text>
+              <Text style={styles.subtitle}>Sign up to get started</Text>
+            </View>
+
+            {authError && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{authError}</Text>
               </View>
-            ) : (
-              <Text style={styles.buttonText}>Sign Up</Text>
             )}
-          </TouchableOpacity>
-          <View style={styles.footer}>
-            <Text>Already have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-              <Text style={styles.link}>Login</Text>
-            </TouchableOpacity>
+
+            <View style={styles.form}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your full name"
+                  value={name}
+                  onChangeText={setName}
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Phone</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your phone number"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[styles.input, styles.passwordInput]}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    placeholderTextColor="#999"
+                  />
+                  <TouchableOpacity 
+                    onPress={() => setShowPassword(!showPassword)} 
+                    style={styles.toggleButton}
+                  >
+                    <Text style={styles.toggleButtonText}>
+                      {showPassword ? 'Hide' : 'Show'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Role</Text>
+                <TouchableOpacity
+                  style={styles.dropdown}
+                  onPress={() => setDropdownVisible(true)}
+                >
+                  <Text style={styles.dropdownText}>
+                    {roleOptions.find(opt => opt.value === role)?.label}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.signupButton, loading && styles.signupButtonDisabled]}
+                onPress={handleSignup}
+                disabled={loading}
+              >
+                {loading ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator color="#fff" size="small" />
+                    <Text style={styles.loadingText}>Creating Account...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.signupButtonText}>Create Account</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+                <Text style={styles.footerLink}>Login</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={dropdownVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDropdownVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay} 
+          onPress={() => setDropdownVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Role</Text>
+              <TouchableOpacity 
+                style={styles.modalCloseButton}
+                onPress={() => setDropdownVisible(false)}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={roleOptions}
+              keyExtractor={item => item.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.dropdownItem,
+                    role === item.value && styles.dropdownItemSelected
+                  ]}
+                  onPress={() => {
+                    setRole(item.value);
+                    setDropdownVisible(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.dropdownItemText,
+                    role === item.value && styles.dropdownItemTextSelected
+                  ]}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#f6f7fb' 
+  container: {
+    flex: 1,
+    backgroundColor: '#f6f7fb',
   },
-  keyboardView: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    padding: 20 
+  keyboardView: {
+    flex: 1,
   },
-  card: { 
-    width: '90%', 
-    backgroundColor: '#fff', 
-    borderRadius: 16, 
-    padding: 24, 
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.08)'
-    } : {
-      shadowColor: '#000',
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 4
-    })
+  scrollView: {
+    flex: 1,
   },
-  title: { 
-    fontSize: 28, 
-    fontWeight: 'bold', 
-    marginBottom: 8, 
-    textAlign: 'center', 
-    color: '#222' 
+  scrollViewContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  subtitle: { 
-    fontSize: 16, 
-    color: '#666', 
-    marginBottom: 20, 
-    textAlign: 'center' 
+  card: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 32,
+    marginVertical: 20,
+    ...(Platform.OS === 'web' 
+      ? {
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+        }
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 10 },
+          shadowOpacity: 0.1,
+          shadowRadius: 25,
+          elevation: 5,
+        }
+    ),
   },
-  input: { 
-    borderWidth: 1, 
-    borderColor: '#e0e0e0', 
-    borderRadius: 8, 
-    padding: 12, 
-    marginBottom: 16, 
-    fontSize: 16, 
-    backgroundColor: '#fafbfc' 
+  header: {
+    alignItems: 'center',
+    marginBottom: 32,
   },
-  passwordContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 16 
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  toggleBtn: { 
-    marginLeft: 8 
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
   },
-  dropdownContainer: { 
-    marginBottom: 16 
+  errorContainer: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 24,
   },
-  pickerLabel: { 
-    fontSize: 16, 
-    fontWeight: '500', 
-    marginBottom: 8, 
-    color: '#333' 
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    textAlign: 'center',
   },
-  dropdown: { 
-    borderWidth: 1, 
-    borderColor: '#e0e0e0', 
-    borderRadius: 8, 
-    padding: 12, 
-    backgroundColor: '#fafbfc' 
+  form: {
+    gap: 20,
   },
-  dropdownText: { 
-    fontSize: 16, 
-    color: '#222' 
+  inputGroup: {
+    marginBottom: 16,
   },
-  modalOverlay: { 
-    flex: 1, 
-    backgroundColor: 'rgba(0,0,0,0.2)', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  label: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#4b5563',
+    marginBottom: 6,
   },
-  dropdownList: { 
-    width: '80%', 
-    backgroundColor: '#fff', 
-    borderRadius: 8, 
-    paddingVertical: 8,
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.15)'
-    } : {
-      elevation: 8
-    })
+  input: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#1f2937',
   },
-  dropdownItem: { 
-    padding: 14, 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#eee' 
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  dropdownItemText: { 
-    fontSize: 16, 
-    color: '#222' 
+  passwordInput: {
+    flex: 1,
   },
-  dropdownItemTextSelected: { 
-    color: '#007AFF', 
-    fontWeight: 'bold' 
+  toggleButton: {
+    position: 'absolute',
+    right: 16,
+    height: '100%',
+    justifyContent: 'center',
   },
-  button: { 
-    backgroundColor: '#007AFF', 
-    borderRadius: 8, 
-    paddingVertical: 14, 
-    alignItems: 'center', 
-    marginTop: 8 
+  toggleButtonText: {
+    color: '#2563eb',
+    fontSize: 14,
+    fontWeight: '500',
   },
-  buttonDisabled: {
-    backgroundColor: '#99c5ff',
+  dropdown: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 16,
   },
-  buttonText: { 
-    color: '#fff', 
-    fontSize: 18, 
-    fontWeight: 'bold' 
+  dropdownText: {
+    fontSize: 16,
+    color: '#1f2937',
+  },
+  signupButton: {
+    backgroundColor: '#2563eb',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  signupButtonDisabled: {
+    backgroundColor: '#93c5fd',
+  },
+  signupButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
   },
   loadingText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 10,
   },
-  error: { 
-    color: '#d32f2f', 
-    marginBottom: 12, 
-    textAlign: 'center' 
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
   },
-  footer: { 
-    flexDirection: 'row', 
-    justifyContent: 'center', 
-    marginTop: 18 
+  footerText: {
+    color: '#6b7280',
+    fontSize: 14,
   },
-  link: { 
-    color: '#007AFF', 
-    fontWeight: 'bold' 
+  footerLink: {
+    color: '#2563eb',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...(Platform.OS === 'web'
+      ? {
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
+        }
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 25 },
+          shadowOpacity: 0.25,
+          shadowRadius: 50,
+          elevation: 10,
+        }
+    ),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+  },
+  modalCloseButton: {
+    padding: 8,
+  },
+  modalCloseText: {
+    fontSize: 18,
+    color: '#6b7280',
+  },
+  dropdownItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  dropdownItemSelected: {
+    backgroundColor: '#eff6ff',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#1f2937',
+  },
+  dropdownItemTextSelected: {
+    color: '#2563eb',
+    fontWeight: '500',
   },
 });
 
