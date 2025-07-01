@@ -26,7 +26,10 @@ export function AuthProvider({ children }) {
         throw new Error(data.message || 'Invalid credentials');
       }
 
-      setCurrentUser(data.user);
+      setCurrentUser({
+        ...data.user,
+        fullName: data.user.name,
+      });
       setAccessToken(data.token);
       return data;
     } catch (error) {
